@@ -1,15 +1,19 @@
+import os
+import httpx
 import groq
 from config import GROQ_API_KEY
 
-import os
+# Очищаем переменные окружения от прокси
+for key in ("HTTP_PROXY", "HTTPS_PROXY", "http_proxy", "https_proxy"):
+    os.environ.pop(key, None)
 
-# Убираем прокси-переменные, чтобы httpx их не подхватил
-os.environ.pop("HTTP_PROXY", None)
-os.environ.pop("HTTPS_PROXY", None)
-os.environ.pop("http_proxy", None)
-os.environ.pop("https_proxy", None)
+# Явно создаём httpx-клиент без прокси
+http_client = httpx.Client(proxies=None)
 
-client = groq.Groq(api_key=GROQ_API_KEY)
+client = groq.Groq(
+    api_key=GROQ_API_KEY,
+    http_client=http_client
+)
 
 def ask_groq(prompt: str) -> str:
     response = client.chat.completions.create(
