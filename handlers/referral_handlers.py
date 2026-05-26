@@ -1,5 +1,5 @@
 from aiogram import Router, types
-from aiogram.filters import F
+from aiogram.filters import Text
 from database import get_user
 from keyboards import back_button
 
