@@ -1,4 +1,5 @@
-from aiogram import Router, types, F
+from aiogram import Router, types
+from aiogram.filters import F
 from aiogram.types import CallbackQuery
 from database import get_user, update_user, clear_history
 from keyboards import settings_menu, ai_choice_menu, image_model_menu, back_button
