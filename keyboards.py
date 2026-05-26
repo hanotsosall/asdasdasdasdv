@@ -16,8 +16,8 @@ def main_menu(user_id: int):
             InlineKeyboardButton(text="⚙️ Настройки", callback_data="settings")
         ],
         [
-            InlineKeyboardButton(text="⭐ Поддержать", callback_data="donate"),
-            InlineKeyboardButton(text="💎 Подписка", callback_data="subscription")
+            InlineKeyboardButton(text="⭐ Поддержать (Telegram Stars)", callback_data="donate"),
+            InlineKeyboardButton(text="💎 Подписка / Запросы", callback_data="donate")
         ],
         [
             InlineKeyboardButton(text="🎮 Открыть Mini App", web_app=WebAppInfo(url="https://asdasdasdasdv-production.up.railway.app"))
