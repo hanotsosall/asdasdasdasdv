@@ -1,14 +1,15 @@
 import os
+
+# !!! Важно: удаляем прокси-переменные ДО импорта httpx и groq
+for key in ("HTTP_PROXY", "HTTPS_PROXY", "http_proxy", "https_proxy"):
+    os.environ.pop(key, None)
+
 import httpx
 import groq
 from config import GROQ_API_KEY
 
-# Очищаем переменные окружения от прокси
-for key in ("HTTP_PROXY", "HTTPS_PROXY", "http_proxy", "https_proxy"):
-    os.environ.pop(key, None)
-
-# Явно создаём httpx-клиент без прокси
-http_client = httpx.Client(proxies=None)
+# Создаём чистый http-клиент (переменные уже отсутствуют)
+http_client = httpx.Client()
 
 client = groq.Groq(
     api_key=GROQ_API_KEY,
