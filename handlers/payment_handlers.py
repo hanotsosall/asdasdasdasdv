@@ -1,4 +1,5 @@
-from aiogram import Router, types, F
+from aiogram import Router, types
+from aiogram.filters import F
 from keyboards import back_button
 
 router = Router()
