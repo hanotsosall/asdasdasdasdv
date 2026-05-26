@@ -6,21 +6,15 @@ def ask_deepseek_with_history(prompt: str, history: list) -> str:
     for role, content in history:
         messages.append({"role": role, "content": content})
     messages.append({"role": "user", "content": prompt})
-    
-    headers = {
-        "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
-        "Content-Type": "application/json"
-    }
-    data = {
-        "model": DEEPSEEK_MODEL,
-        "messages": messages,
-        "temperature": 0.7,
-        "max_tokens": 1024
-    }
+    headers = {"Authorization": f"Bearer {DEEPSEEK_API_KEY}", "Content-Type": "application/json"}
+    data = {"model": DEEPSEEK_MODEL, "messages": messages, "temperature": 0.7, "max_tokens": 1024}
     response = requests.post("https://api.deepseek.com/v1/chat/completions", headers=headers, json=data)
     if response.status_code == 200:
         return response.json()["choices"][0]["message"]["content"]
     else:
+        error = response.json()
+        if "Insufficient Balance" in str(error):
+            return "⚠️ У сервиса DeepSeek закончился баланс. Пожалуйста, используйте Groq или сообщите администратору."
         return f"⚠️ Ошибка DeepSeek: {response.text}"
 
 def ask_deepseek(prompt: str) -> str:
