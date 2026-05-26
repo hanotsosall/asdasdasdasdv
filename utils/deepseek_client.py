@@ -1,14 +1,19 @@
 import requests
-from config import DEEPSEEK_API_KEY
+from config import DEEPSEEK_API_KEY, DEEPSEEK_MODEL
 
-def ask_deepseek(prompt: str) -> str:
+def ask_deepseek_with_history(prompt: str, history: list) -> str:
+    messages = []
+    for role, content in history:
+        messages.append({"role": role, "content": content})
+    messages.append({"role": "user", "content": prompt})
+    
     headers = {
         "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
         "Content-Type": "application/json"
     }
     data = {
-        "model": "deepseek-chat",
-        "messages": [{"role": "user", "content": prompt}],
+        "model": DEEPSEEK_MODEL,
+        "messages": messages,
         "temperature": 0.7,
         "max_tokens": 1024
     }
@@ -17,3 +22,6 @@ def ask_deepseek(prompt: str) -> str:
         return response.json()["choices"][0]["message"]["content"]
     else:
         return f"⚠️ Ошибка DeepSeek: {response.text}"
+
+def ask_deepseek(prompt: str) -> str:
+    return ask_deepseek_with_history(prompt, [])
