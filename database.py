@@ -18,7 +18,8 @@ def init_db():
             ref_by INTEGER,
             total_requests INTEGER DEFAULT 0,
             total_images INTEGER DEFAULT 0,
-            reg_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            reg_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            default_ai TEXT DEFAULT 'groq'          -- groq / deepseek / gemini
         )
     ''')
     c.execute('''
@@ -41,6 +42,16 @@ def init_db():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS chat_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER,
+            ai_name TEXT,               -- groq, deepseek, gemini
+            role TEXT,                  -- user / assistant
+            content TEXT,
+            timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
     conn.commit()
     conn.close()
 
@@ -56,7 +67,7 @@ def get_user(user_id: int):
         row = c.fetchone()
     conn.close()
     columns = ["user_id", "username", "first_name", "balance_requests", "subscribed", "subscription_until",
-               "ref_count", "ref_by", "total_requests", "total_images", "reg_date"]
+               "ref_count", "ref_by", "total_requests", "total_images", "reg_date", "default_ai"]
     return dict(zip(columns, row))
 
 def update_user(user_id: int, **kwargs):
@@ -77,4 +88,33 @@ def add_referral(referrer_id: int, referred_id: int):
         conn.commit()
     except:
         pass
+    conn.close()
+
+# Функции для работы с историей
+def add_history(user_id: int, ai_name: str, role: str, content: str):
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("INSERT INTO chat_history (user_id, ai_name, role, content) VALUES (?, ?, ?, ?)",
+              (user_id, ai_name, role, content))
+    conn.commit()
+    conn.close()
+
+def get_history(user_id: int, ai_name: str, limit: int = 10) -> list:
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("SELECT role, content FROM chat_history WHERE user_id = ? AND ai_name = ? ORDER BY timestamp DESC LIMIT ?",
+              (user_id, ai_name, limit))
+    rows = c.fetchall()
+    conn.close()
+    # возвращаем в хронологическом порядке (старые -> новые)
+    return list(reversed(rows))
+
+def clear_history(user_id: int, ai_name: str = None):
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    if ai_name:
+        c.execute("DELETE FROM chat_history WHERE user_id = ? AND ai_name = ?", (user_id, ai_name))
+    else:
+        c.execute("DELETE FROM chat_history WHERE user_id = ?", (user_id,))
+    conn.commit()
     conn.close()
