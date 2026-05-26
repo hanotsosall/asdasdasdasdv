@@ -1,6 +1,5 @@
 from aiogram import Router, types
-from aiogram.filters import Command
-from aiogram.filters import F   # <-- правильный импорт
+from aiogram.filters import Command, Text
 from aiogram.types import CallbackQuery
 from database import get_user, add_referral
 from keyboards import main_menu
@@ -26,7 +25,7 @@ async def cmd_start(message: types.Message):
     )
     await message.answer(text, reply_markup=main_menu(user_id), parse_mode="Markdown")
 
-@router.callback_query(F.data == "main_menu")
+@router.callback_query(Text("main_menu"))
 async def back_to_main_menu(callback: CallbackQuery):
     user_id = callback.from_user.id
     user = get_user(user_id)
