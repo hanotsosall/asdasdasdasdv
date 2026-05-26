@@ -34,13 +34,11 @@ async def generate_image_from_prompt(message: types.Message, state: FSMContext):
     prompt = message.text
     user_id = message.from_user.id
     user = get_user(user_id)
-    # Получаем выбранную модель генерации (по умолчанию pollinations)
     image_model = user.get('image_model', 'pollinations')
     msg = await message.answer("🖼️ Генерирую изображение...")
     url = await generate_image(prompt, model=image_model)
     if url:
         await msg.delete()
-        # Обновляем статистику пользователя
         update_user(user_id, total_images=user['total_images']+1)
         await message.answer_photo(photo=url, caption=f"По запросу: {prompt}")
     else:
