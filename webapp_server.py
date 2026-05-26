@@ -1,33 +1,31 @@
+import os
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from typing import List, Dict
 import uvicorn
-import os
 
-# Импорт твоих модулей (те же самые, что у бота)
+# Импорты из твоего бота
 from database import get_user, update_user, add_history, clear_history
 from utils.groq_client import ask_groq_with_history
 from utils.deepseek_client import ask_deepseek_with_history
-from utils.gemini_client import ask_gemini_with_history
 from utils.image_gen import generate_image
 
 app = FastAPI()
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
-# Отдаём статику (index.html будет доступен по /)
+# Отдаём статические файлы (папка static с index.html)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# Корневой путь: редирект или сразу index.html
-from fastapi.responses import FileResponse
 @app.get("/")
 async def root():
     return FileResponse("static/index.html")
 
-# ----- API эндпоинты (как в предыдущем сообщении) -----
+# ---------- API ----------
 class ChatReq(BaseModel):
-    model: str
+    model: str          # только "groq" или "deepseek"
     message: str
     user_id: int
     history: List[Dict[str, str]]
@@ -39,25 +37,30 @@ class ImageReq(BaseModel):
 
 class SetDefaultAI(BaseModel):
     user_id: int
-    default_ai: str
+    default_ai: str     # "groq" или "deepseek"
 
 class ClearHistoryReq(BaseModel):
     user_id: int
 
 @app.post("/api/chat")
 async def chat(req: ChatReq):
+    # Проверяем, что модель не gemini
+    if req.model not in ("groq", "deepseek"):
+        return {"reply": "❌ Модель Gemini отключена. Выбери Groq или DeepSeek."}
+    
     user = get_user(req.user_id)
     if user['balance_requests'] <= 0 and not user['subscribed']:
-        return {"reply": "❌ Недостаточно запросов."}
+        return {"reply": "❌ Недостаточно запросов. Оформи подписку или пригласи друга."}
+    
     history = [(h['role'], h['content']) for h in req.history[-10:]]
+    
     if req.model == "groq":
         answer = ask_groq_with_history(req.message, history)
     elif req.model == "deepseek":
         answer = ask_deepseek_with_history(req.message, history)
-    elif req.model == "gemini":
-        answer = ask_gemini_with_history(req.message, history)
     else:
-        answer = "Unknown model"
+        answer = "Неизвестная модель"
+    
     add_history(req.user_id, req.model, "user", req.message)
     add_history(req.user_id, req.model, "assistant", answer)
     update_user(req.user_id, balance_requests=user['balance_requests']-1, total_requests=user['total_requests']+1)
@@ -70,7 +73,7 @@ async def gen_image(req: ImageReq):
         user = get_user(req.user_id)
         update_user(req.user_id, total_images=user['total_images']+1)
         return {"url": url}
-    return {"error": "Generation failed"}
+    return {"error": "Не удалось сгенерировать изображение"}
 
 @app.get("/api/profile")
 async def profile(user_id: int):
@@ -85,20 +88,27 @@ async def profile(user_id: int):
 
 @app.post("/api/set_default_ai")
 async def set_default(req: SetDefaultAI):
+    if req.default_ai not in ("groq", "deepseek"):
+        return {"error": "Можно выбрать только Groq или DeepSeek"}
     update_user(req.user_id, default_ai=req.default_ai)
     return {"status": "ok"}
 
 @app.get("/api/get_settings")
 async def get_settings(user_id: int):
     u = get_user(user_id)
-    return {"default_ai": u['default_ai']}
+    # Если у пользователя сохранена gemini, подменим на groq
+    default = u['default_ai']
+    if default not in ("groq", "deepseek"):
+        default = "groq"
+        update_user(user_id, default_ai=default)
+    return {"default_ai": default}
 
 @app.post("/api/clear_history")
 async def clear_history_endpoint(req: ClearHistoryReq):
     clear_history(req.user_id)
     return {"status": "ok"}
 
-# Запуск (Railway сам передаст PORT)
+# Запуск (для Railway)
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)
