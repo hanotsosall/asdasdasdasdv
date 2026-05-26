@@ -1,12 +1,12 @@
 from aiogram import Router, types
-from aiogram.filters import Text
 from aiogram.types import CallbackQuery
+from aiogram.fsm.context import FSMContext
 from database import get_user, update_user, clear_history
 from keyboards import settings_menu, ai_choice_menu, image_model_menu, back_button
 
 router = Router()
 
-@router.callback_query(Text("settings"))
+@router.callback_query(lambda c: c.data == "settings")
 async def settings_menu_handler(callback: CallbackQuery):
     user = get_user(callback.from_user.id)
     current_ai = user['default_ai']
@@ -17,7 +17,7 @@ async def settings_menu_handler(callback: CallbackQuery):
     )
     await callback.answer()
 
-@router.callback_query(Text("change_default_ai"))
+@router.callback_query(lambda c: c.data == "change_default_ai")
 async def change_default_ai_menu(callback: CallbackQuery):
     await callback.message.edit_text(
         "Выбери **основную ИИ**, которая будет отвечать по умолчанию:",
@@ -26,7 +26,7 @@ async def change_default_ai_menu(callback: CallbackQuery):
     )
     await callback.answer()
 
-@router.callback_query(Text(startswith="set_ai_"))
+@router.callback_query(lambda c: c.data.startswith("set_ai_"))
 async def set_default_ai(callback: CallbackQuery):
     ai_name = callback.data.split("_")[-1]
     user_id = callback.from_user.id
@@ -39,7 +39,7 @@ async def set_default_ai(callback: CallbackQuery):
         parse_mode="Markdown"
     )
 
-@router.callback_query(Text("clear_history"))
+@router.callback_query(lambda c: c.data == "clear_history")
 async def clear_history_callback(callback: CallbackQuery):
     user_id = callback.from_user.id
     clear_history(user_id)
@@ -51,7 +51,7 @@ async def clear_history_callback(callback: CallbackQuery):
         parse_mode="Markdown"
     )
 
-@router.callback_query(Text("image_model_settings"))
+@router.callback_query(lambda c: c.data == "image_model_settings")
 async def image_model_settings(callback: CallbackQuery):
     user = get_user(callback.from_user.id)
     current_model = user.get('image_model', 'pollinations')
@@ -61,7 +61,7 @@ async def image_model_settings(callback: CallbackQuery):
     )
     await callback.answer()
 
-@router.callback_query(Text(startswith="set_image_model_"))
+@router.callback_query(lambda c: c.data.startswith("set_image_model_"))
 async def set_image_model(callback: CallbackQuery):
     model = callback.data.split("_")[-1]
     update_user(callback.from_user.id, image_model=model)
