@@ -90,13 +90,17 @@
         .nav-icon { font-size: 24px; }
         .page {
             display: none;
-            padding: 80px 20px 100px 20px;
+            padding: 80px 20px 120px 20px;  /* увеличен нижний отступ */
             animation: fadeIn 0.4s ease;
         }
         .page.active { display: block; }
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(10px);}
             to { opacity: 1; transform: translateY(0);}
+        }
+        /* Специально для страницы изображений – больше отступа снизу */
+        #image-page {
+            padding-bottom: 160px;
         }
         .model-selector {
             display: flex;
@@ -185,7 +189,9 @@
             border-radius: 40px;
             padding: 8px 12px;
             border: 1px solid rgba(255,255,255,0.2);
+            z-index: 90;
         }
+        /* Для страницы изображений input-wrapper не фиксированный? Нет, он фиксированный – поэтому добавим отступы */
         .input-wrapper input {
             flex: 1;
             background: transparent;
@@ -219,6 +225,12 @@
         }
         .profile-card { padding: 24px; border-radius: 32px; text-align: center; }
         .stat-row { display: flex; justify-content: space-between; margin: 16px 0; font-size: 18px; }
+        
+        /* Дополнительно: на странице изображений контейнер с результатом не должен перекрывать селектор */
+        #image-result {
+            margin-top: 30px;
+            margin-bottom: 30px;
+        }
     </style>
 </head>
 <body>
@@ -230,6 +242,7 @@
     <button class="nav-item" data-page="settings"><span class="nav-icon">⚙️</span><span>Настройки</span></button>
 </div>
 
+<!-- Страница чата -->
 <div id="chat-page" class="page active">
     <div class="model-selector" id="chat-model-selector">
         <div class="model-btn" data-model="groq">🤖 Groq</div>
@@ -242,19 +255,23 @@
     </div>
 </div>
 
+<!-- Страница генерации изображений (исправлены отступы) -->
 <div id="image-page" class="page">
     <h2 style="margin-bottom:20px;">🎨 Генерация изображений</h2>
     <div class="model-selector" id="image-model-selector">
         <div class="model-btn" data-img-model="pollinations">🌐 Pollinations</div>
         <div class="model-btn" data-img-model="nano_banana">🍌 Nano Banana</div>
     </div>
-    <div class="input-wrapper" style="position:relative; margin-bottom:30px;">
+    <!-- Здесь input-wrapper будет визуально ниже, но он фиксированный, поэтому добавим пустой блок для отступа -->
+    <div style="height: 20px;"></div>
+    <div class="input-wrapper" style="position: relative; margin-bottom: 20px; bottom: auto; left: auto; right: auto;">
         <input type="text" id="image-prompt" placeholder="Опиши картинку...">
         <button id="generate-img-btn">✨ Сгенерить</button>
     </div>
     <div id="image-result" style="text-align:center; margin-top:20px;"></div>
 </div>
 
+<!-- Профиль -->
 <div id="profile-page" class="page">
     <div class="glass profile-card">
         <h2>👤 Мой профиль</h2>
@@ -267,6 +284,7 @@
     </div>
 </div>
 
+<!-- Настройки -->
 <div id="settings-page" class="page">
     <div class="glass" style="padding:24px;">
         <h2>⚙️ Настройки</h2>
