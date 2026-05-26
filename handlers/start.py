@@ -1,6 +1,7 @@
 from aiogram import Router, types
 from aiogram.filters import Command
-from aiogram.types import CallbackQuery, F
+from aiogram.filters import F   # <-- правильный импорт
+from aiogram.types import CallbackQuery
 from database import get_user, add_referral
 from keyboards import main_menu
 
