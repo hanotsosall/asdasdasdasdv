@@ -2,6 +2,8 @@ from aiogram import Router, types
 from aiogram.filters import Command
 from database import get_user, add_referral
 from keyboards import main_menu
+from config import ADMIN_ID
+from keyboards import admin_panel
 
 router = Router()
 
@@ -23,3 +25,10 @@ async def cmd_start(message: types.Message):
         "👇 Выбери действие:"
     )
     await message.answer(text, reply_markup=main_menu(), parse_mode="Markdown")
+
+@router.message(Command("admin"))
+async def admin_command(message: types.Message):
+    if message.from_user.id == ADMIN_ID:
+        await message.answer("👑 Админ-панель", reply_markup=admin_panel())
+    else:
+        await message.answer("Нет доступа")
