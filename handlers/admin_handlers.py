@@ -1,5 +1,5 @@
 from aiogram import Router, types
-from aiogram.filters import F   # правильный импорт
+from aiogram.filters import Text
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import CallbackQuery, Message
@@ -23,7 +23,7 @@ def is_admin(user_id: int) -> bool:
     return user_id == ADMIN_ID
 
 # --- Панель админа ---
-@router.callback_query(F.data == "admin_panel")
+@router.callback_query(Text("admin_panel"))
 async def admin_panel_callback(callback: CallbackQuery):
     if not is_admin(callback.from_user.id):
         await callback.answer("Нет доступа", show_alert=True)
@@ -32,7 +32,7 @@ async def admin_panel_callback(callback: CallbackQuery):
     await callback.answer()
 
 # --- Статистика ---
-@router.callback_query(F.data == "admin_stats")
+@router.callback_query(Text("admin_stats"))
 async def admin_stats(callback: CallbackQuery):
     if not is_admin(callback.from_user.id):
         await callback.answer("Нет доступа", show_alert=True)
@@ -55,14 +55,15 @@ async def admin_stats(callback: CallbackQuery):
     await callback.answer()
 
 # --- Список пользователей (пагинация) ---
-@router.callback_query(F.data.startswith("admin_users"))
-async def admin_users(callback: CallbackQuery, page: int = 0):
+@router.callback_query(Text(startswith="admin_users"))
+async def admin_users(callback: CallbackQuery):
     if not is_admin(callback.from_user.id):
         await callback.answer("Нет доступа", show_alert=True)
         return
     # Определяем страницу
-    if "page_" in callback.data:
-        page = int(callback.data.split("_")[-1])
+    data = callback.data
+    if "page_" in data:
+        page = int(data.split("_")[-1])
     else:
         page = 0
     conn = sqlite3.connect(DB_PATH)
@@ -83,7 +84,7 @@ async def admin_users(callback: CallbackQuery, page: int = 0):
     await callback.answer()
 
 # --- Накрутка баланса (FSM) ---
-@router.callback_query(F.data == "admin_balance")
+@router.callback_query(Text("admin_balance"))
 async def admin_balance_start(callback: CallbackQuery, state: FSMContext):
     if not is_admin(callback.from_user.id):
         await callback.answer("Нет доступа", show_alert=True)
@@ -128,7 +129,7 @@ async def admin_balance_set(message: Message, state: FSMContext):
         await state.clear()
 
 # --- Управление подпиской (FSM) ---
-@router.callback_query(F.data == "admin_subscription")
+@router.callback_query(Text("admin_subscription"))
 async def admin_sub_start(callback: CallbackQuery, state: FSMContext):
     if not is_admin(callback.from_user.id):
         await callback.answer("Нет доступа", show_alert=True)
@@ -175,7 +176,7 @@ async def admin_sub_set(message: Message, state: FSMContext):
         await state.clear()
 
 # --- Рассылка (FSM) ---
-@router.callback_query(F.data == "admin_broadcast")
+@router.callback_query(Text("admin_broadcast"))
 async def admin_broadcast_start(callback: CallbackQuery, state: FSMContext):
     if not is_admin(callback.from_user.id):
         await callback.answer("Нет доступа", show_alert=True)
