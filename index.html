@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Ultimate AI — Mini App</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'SF Pro Text', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: var(--tg-theme-bg-color, #0f0f1a);
+            color: var(--tg-theme-text-color, #ffffff);
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        /* Ахуенный градиентный фон с анимацией */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 20% 30%, rgba(100, 70, 200, 0.2), transparent 60%),
+                        radial-gradient(circle at 80% 70%, rgba(0, 200, 255, 0.15), transparent 60%);
+            pointer-events: none;
+            z-index: -2;
+        }
+
+        /* Частицы (снежок / звёзды) */
+        .particle {
+            position: fixed;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: -1;
+            animation: float 15s infinite linear;
+        }
+
+        @keyframes float {
+            0% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateY(-20vh) rotate(360deg); opacity: 0; }
+        }
+
+        /* Glassmorphic контейнеры */
+        .glass {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border-radius: 32px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+        }
+
+        /* Навигация (нижнее меню) */
+        .nav-bar {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            background: rgba(20, 20, 35, 0.8);
+            backdrop-filter: blur(25px);
+            border-radius: 50px;
+            display: flex;
+            justify-content: space-around;
+            padding: 8px 12px;
+            border: 1px solid rgba(255,255,255,0.15);
+            z-index: 100;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            background: transparent;
+            border: none;
+            color: var(--tg-theme-hint-color, #888);
+            font-size: 12px;
+            padding: 8px 16px;
+            border-radius: 40px;
+            transition: all 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+            cursor: pointer;
+        }
+        .nav-item.active {
+            background: var(--tg-theme-button-color, #3a6ea5);
+            color: white;
+            box-shadow: 0 0 15px var(--tg-theme-button-color, #3a6ea5);
+        }
+        .nav-icon {
+            font-size: 24px;
+        }
+
+        /* Контент страниц */
+        .page {
+            display: none;
+            padding: 80px 20px 100px 20px;
+            animation: fadeIn 0.4s ease;
+        }
+        .page.active {
+            display: block;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px);}
+            to { opacity: 1; transform: translateY(0);}
+        }
+
+        /* Чат */
+        .chat-messages {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 20px;
+            max-height: calc(100vh - 220px);
+            overflow-y: auto;
+            padding-right: 6px;
+        }
+        .message {
+            max-width: 85%;
+            padding: 12px 16px;
+            border-radius: 24px;
+            animation: slideIn 0.2s ease;
+        }
+        .user-message {
+            align-self: flex-end;
+            background: var(--tg-theme-button-color, #3a6ea5);
+            color: white;
+            border-bottom-right-radius: 6px;
+        }
+        .bot-message {
+            align-self: flex-start;
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border-bottom-left-radius: 6px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(20px);}
+            to { opacity: 1; transform: translateX(0);}
+        }
+        .typing-indicator {
+            display: flex;
+            gap: 5px;
+            padding: 12px 16px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 24px;
+            width: fit-content;
+        }
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            background: white;
+            border-radius: 50%;
+            animation: typing 1.4s infinite;
+        }
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes typing {
+            0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+            30% { transform: translateY(-8px); opacity: 1; }
+        }
+
+        /* Инпут с неоном */
+        .input-wrapper {
+            position: fixed;
+            bottom: 90px;
+            left: 20px;
+            right: 20px;
+            display: flex;
+            gap: 12px;
+            background: rgba(30,30,45,0.8);
+            backdrop-filter: blur(20px);
+            border-radius: 40px;
+            padding: 8px 12px;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .input-wrapper input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            padding: 14px 10px;
+            color: white;
+            font-size: 16px;
+            outline: none;
+        }
+        .input-wrapper button {
+            background: var(--tg-theme-button-color, #3a6ea5);
+            border: none;
+            border-radius: 30px;
+            padding: 0 20px;
+            font-weight: bold;
+            color: white;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .input-wrapper button:active { transform: scale(0.96); }
+
+        /* Карточки моделей */
+        .model-selector {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .model-btn {
+            flex: 1;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 30px;
+            padding: 12px;
+            text-align: center;
+            font-weight: bold;
+            transition: 0.2s;
+            cursor: pointer;
+        }
+        .model-btn.active-model {
+            background: var(--tg-theme-button-color, #3a6ea5);
+            border-color: transparent;
+            box-shadow: 0 0 12px var(--tg-theme-button-color);
+        }
+
+        /* Кнопки */
+        .glow-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 40px;
+            padding: 14px 24px;
+            color: white;
+            font-weight: bold;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(102,126,234,0.4);
+        }
+        .glow-button:active {
+            transform: scale(0.97);
+            box-shadow: 0 0 20px rgba(102,126,234,0.8);
+        }
+
+        /* Профиль */
+        .profile-card {
+            padding: 24px;
+            border-radius: 32px;
+            text-align: center;
+        }
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 16px 0;
+            font-size: 18px;
+        }
+
+        /* Анимация печатного текста */
+        .typing-animation {
+            display: inline-block;
+            overflow: hidden;
+            border-right: 2px solid white;
+            white-space: pre-wrap;
+            animation: blinkCursor 0.7s infinite;
+        }
+        @keyframes blinkCursor {
+            0%, 100% { border-color: white; }
+            50% { border-color: transparent; }
+        }
+    </style>
+</head>
+<body>
+<div id="particles"></div>
+
+<div class="nav-bar">
+    <button class="nav-item" data-page="chat"><span class="nav-icon">💬</span><span>Чат</span></button>
+    <button class="nav-item" data-page="image"><span class="nav-icon">🎨</span><span>Изо</span></button>
+    <button class="nav-item" data-page="profile"><span class="nav-icon">👤</span><span>Профиль</span></button>
+    <button class="nav-item" data-page="settings"><span class="nav-icon">⚙️</span><span>Настройки</span></button>
+</div>
+
+<!-- Страница чата -->
+<div id="chat-page" class="page active">
+    <div class="model-selector" id="chat-model-selector">
+        <div class="model-btn" data-model="groq">🤖 Groq</div>
+        <div class="model-btn" data-model="deepseek">🧠 DeepSeek</div>
+        <div class="model-btn" data-model="gemini">✨ Gemini</div>
+    </div>
+    <div class="chat-messages" id="chat-history"></div>
+    <div class="input-wrapper">
+        <input type="text" id="message-input" placeholder="Напиши что-нибудь...">
+        <button id="send-btn">➤</button>
+    </div>
+</div>
+
+<!-- Страница генерации изображений -->
+<div id="image-page" class="page">
+    <h2 style="margin-bottom: 20px;">🎨 Генерация изображений</h2>
+    <div class="model-selector" id="image-model-selector">
+        <div class="model-btn" data-img-model="pollinations">🌐 Pollinations</div>
+        <div class="model-btn" data-img-model="nano_banana">🍌 Nano Banana</div>
+    </div>
+    <div class="input-wrapper" style="position: relative; margin-bottom: 30px;">
+        <input type="text" id="image-prompt" placeholder="Опиши картинку...">
+        <button id="generate-img-btn">✨ Сгенерить</button>
+    </div>
+    <div id="image-result" style="text-align: center; margin-top: 20px;"></div>
+</div>
+
+<!-- Страница профиля -->
+<div id="profile-page" class="page">
+    <div class="glass profile-card">
+        <h2>👤 Мой профиль</h2>
+        <div class="stat-row"><span>🆔 ID:</span><span id="profile-id">загрузка...</span></div>
+        <div class="stat-row"><span>💰 Баланс запросов:</span><span id="profile-balance">-</span></div>
+        <div class="stat-row"><span>👥 Рефералы:</span><span id="profile-refs">-</span></div>
+        <div class="stat-row"><span>⭐ Подписка:</span><span id="profile-sub">-</span></div>
+        <div class="stat-row"><span>📊 Всего запросов:</span><span id="profile-total-req">-</span></div>
+        <button class="glow-button" id="refresh-profile" style="margin-top: 20px;">Обновить</button>
+    </div>
+</div>
+
+<!-- Страница настроек -->
+<div id="settings-page" class="page">
+    <div class="glass" style="padding: 24px;">
+        <h2>⚙️ Настройки</h2>
+        <div class="stat-row">Основная ИИ: <strong id="current-default-ai">groq</strong></div>
+        <div class="model-selector" id="default-ai-selector">
+            <div class="model-btn" data-default="groq">Groq</div>
+            <div class="model-btn" data-default="deepseek">DeepSeek</div>
+            <div class="model-btn" data-default="gemini">Gemini</div>
+        </div>
+        <button class="glow-button" id="clear-history-btn" style="background: #aa2e4e; margin-top: 20px;">🗑 Очистить историю чата</button>
+        <button class="glow-button" id="close-app-btn" style="background: #2c3e66; margin-top: 12px;">Закрыть приложение</button>
+    </div>
+</div>
+
+<script>
+    const tg = window.Telegram.WebApp;
+    tg.expand();
+    tg.MainButton.hide();
+
+    // --- Глобальные переменные ---
+    const API_BASE = "https://YOUR_DOMAIN.com/api";  // <--- ЗАМЕНИТЕ НА ВАШ АДРЕС СЕРВЕРА
+    let currentChatModel = "groq";
+    let chatHistory = [];   // массив объектов {role, content}
+    let typingTimeout = null;
+
+    // --- Генерация частиц ---
+    function createParticles() {
+        const container = document.getElementById('particles');
+        for(let i=0; i<80; i++) {
+            const p = document.createElement('div');
+            p.classList.add('particle');
+            const size = Math.random() * 4 + 2;
+            p.style.width = size + 'px';
+            p.style.height = size + 'px';
+            p.style.left = Math.random() * 100 + '%';
+            p.style.animationDelay = Math.random() * 20 + 's';
+            p.style.animationDuration = 10 + Math.random() * 15 + 's';
+            p.style.opacity = Math.random() * 0.5;
+            container.appendChild(p);
+        }
+    }
+    createParticles();
+
+    // --- Навигация ---
+    const pages = ['chat', 'image', 'profile', 'settings'];
+    document.querySelectorAll('.nav-item').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const page = btn.getAttribute('data-page');
+            pages.forEach(p => {
+                document.getElementById(`${p}-page`).classList.remove('active');
+                document.querySelector(`.nav-item[data-page="${p}"]`).classList.remove('active');
+            });
+            document.getElementById(`${page}-page`).classList.add('active');
+            btn.classList.add('active');
+            if(page === 'profile') loadProfile();
+            if(page === 'settings') loadSettings();
+        });
+    });
+
+    // --- Чат: отображение сообщений с анимацией печати ---
+    const chatContainer = document.getElementById('chat-history');
+    function addMessageToChat(role, text, animate = false) {
+        const msgDiv = document.createElement('div');
+        msgDiv.className = `message ${role === 'user' ? 'user-message' : 'bot-message'}`;
+        if(animate && role === 'assistant') {
+            msgDiv.classList.add('typing-animation');
+            msgDiv.innerText = '';
+            chatContainer.appendChild(msgDiv);
+            typeText(msgDiv, text, 20);
+        } else {
+            msgDiv.innerText = text;
+            chatContainer.appendChild(msgDiv);
+        }
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+        return msgDiv;
+    }
+
+    function typeText(element, text, speed) {
+        let i = 0;
+        element.innerText = '';
+        function typing() {
+            if (i < text.length) {
+                element.innerText += text.charAt(i);
+                i++;
+                setTimeout(typing, speed);
+            } else {
+                element.classList.remove('typing-animation');
+                element.style.borderRight = 'none';
+            }
+        }
+        typing();
+    }
+
+    function showTypingIndicator() {
+        const indicator = document.createElement('div');
+        indicator.className = 'typing-indicator';
+        indicator.id = 'typing-indicator';
+        for(let i=0;i<3;i++) {
+            const dot = document.createElement('div');
+            dot.className = 'typing-dot';
+            indicator.appendChild(dot);
+        }
+        chatContainer.appendChild(indicator);
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+
+    function hideTypingIndicator() {
+        const ind = document.getElementById('typing-indicator');
+        if(ind) ind.remove();
+    }
+
+    // Отправка сообщения через API
+    async function sendMessageToAI(message) {
+        try {
+            const response = await fetch(`${API_BASE}/chat`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    model: currentChatModel,
+                    message: message,
+                    user_id: tg.initDataUnsafe?.user?.id || 0,
+                    history: chatHistory.slice(-10)  // последние 10 сообщений
+                })
+            });
+            const data = await response.json();
+            if(data.error) throw new Error(data.error);
+            return data.reply;
+        } catch(e) {
+            console.error(e);
+            return `⚠️ Ошибка: ${e.message}`;
+        }
+    }
+
+    document.getElementById('send-btn').addEventListener('click', async () => {
+        const input = document.getElementById('message-input');
+        const text = input.value.trim();
+        if(!text) return;
+        input.value = '';
+        addMessageToChat('user', text);
+        chatHistory.push({role: 'user', content: text});
+        showTypingIndicator();
+        const reply = await sendMessageToAI(text);
+        hideTypingIndicator();
+        addMessageToChat('assistant', reply, true);
+        chatHistory.push({role: 'assistant', content: reply});
+        // ограничим историю 50 сообщениями
+        if(chatHistory.length > 50) chatHistory = chatHistory.slice(-50);
+    });
+
+    document.getElementById('message-input').addEventListener('keypress', (e) => {
+        if(e.key === 'Enter') document.getElementById('send-btn').click();
+    });
+
+    // Выбор модели чата
+    document.querySelectorAll('#chat-model-selector .model-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('#chat-model-selector .model-btn').forEach(b => b.classList.remove('active-model'));
+            btn.classList.add('active-model');
+            currentChatModel = btn.getAttribute('data-model');
+        });
+    });
+    // активируем дефолтную
+    document.querySelector('#chat-model-selector .model-btn').classList.add('active-model');
+
+    // --- Генерация изображений ---
+    let currentImageModel = 'pollinations';
+    document.querySelectorAll('#image-model-selector .model-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('#image-model-selector .model-btn').forEach(b => b.classList.remove('active-model'));
+            btn.classList.add('active-model');
+            currentImageModel = btn.getAttribute('data-img-model');
+        });
+    });
+    document.querySelector('#image-model-selector .model-btn').classList.add('active-model');
+
+    document.getElementById('generate-img-btn').addEventListener('click', async () => {
+        const prompt = document.getElementById('image-prompt').value.trim();
+        if(!prompt) return;
+        const resultDiv = document.getElementById('image-result');
+        resultDiv.innerHTML = '<div style="margin:20px;">🖼️ Генерация... <div class="typing-indicator" style="margin:10px auto"> <div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div> </div></div>';
+        try {
+            const res = await fetch(`${API_BASE}/generate_image`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ prompt: prompt, model: currentImageModel, user_id: tg.initDataUnsafe?.user?.id || 0 })
+            });
+            const data = await res.json();
+            if(data.url) {
+                resultDiv.innerHTML = `<img src="${data.url}" style="max-width:100%; border-radius:24px; box-shadow:0 0 20px rgba(0,0,0,0.3);">`;
+            } else {
+                resultDiv.innerHTML = `<div style="color:red;">❌ Ошибка: ${data.error || 'неизвестная'}</div>`;
+            }
+        } catch(e) {
+            resultDiv.innerHTML = `<div style="color:red;">❌ Ошибка сети: ${e.message}</div>`;
+        }
+    });
+
+    // --- Профиль ---
+    async function loadProfile() {
+        const userId = tg.initDataUnsafe?.user?.id;
+        if(!userId) {
+            document.getElementById('profile-id').innerText = 'Telegram ID не получен';
+            return;
+        }
+        try {
+            const res = await fetch(`${API_BASE}/profile?user_id=${userId}`);
+            const data = await res.json();
+            document.getElementById('profile-id').innerText = data.user_id;
+            document.getElementById('profile-balance').innerText = data.balance_requests;
+            document.getElementById('profile-refs').innerText = data.ref_count;
+            document.getElementById('profile-sub').innerText = data.subscribed ? 'Активна' : 'Нет';
+            document.getElementById('profile-total-req').innerText = data.total_requests;
+        } catch(e) {
+            console.error(e);
+            document.getElementById('profile-id').innerText = 'Ошибка загрузки';
+        }
+    }
+    document.getElementById('refresh-profile').addEventListener('click', loadProfile);
+
+    // --- Настройки ---
+    async function loadSettings() {
+        const userId = tg.initDataUnsafe?.user?.id;
+        if(!userId) return;
+        try {
+            const res = await fetch(`${API_BASE}/get_settings?user_id=${userId}`);
+            const data = await res.json();
+            document.getElementById('current-default-ai').innerText = data.default_ai;
+        } catch(e) {}
+    }
+    document.querySelectorAll('#default-ai-selector .model-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const newAi = btn.getAttribute('data-default');
+            const userId = tg.initDataUnsafe?.user?.id;
+            if(!userId) return;
+            await fetch(`${API_BASE}/set_default_ai`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: userId, default_ai: newAi })
+            });
+            document.getElementById('current-default-ai').innerText = newAi;
+            tg.showAlert(`Основная ИИ изменена на ${newAi.toUpperCase()}`);
+        });
+    });
+    document.getElementById('clear-history-btn').addEventListener('click', async () => {
+        const userId = tg.initDataUnsafe?.user?.id;
+        if(userId) {
+            await fetch(`${API_BASE}/clear_history`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: userId })
+            });
+            chatHistory = [];
+            tg.showAlert('История чата очищена');
+        }
+    });
+    document.getElementById('close-app-btn').addEventListener('click', () => {
+        tg.close();
+    });
+
+    // Инициализация: подгружаем профиль при старте
+    if(tg.initDataUnsafe?.user?.id) loadProfile();
+</script>
+</body>
+</html>
