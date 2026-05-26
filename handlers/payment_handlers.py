@@ -54,9 +54,8 @@ async def buy_product(callback: CallbackQuery, state: FSMContext):
     await callback.message.answer(
         f"Вы выбрали **{amount_info}**.\n\n"
         f"**Реквизиты для оплаты:**\n"
-        f"Тинькофф: `+7 XXX XXX-XX-XX`\n"
-        f"Сбербанк: `XXXX XXXX XXXX XXXX`\n"
-        f"USDT (TRC20): `TNk...`\n\n"
+        f"Т-Банк: `2200 7021 2282 7293`\n"
+        f"Сбербанк: `2202  2080 8392 4705`\n\n"
         f"После перевода нажмите кнопку **«Я оплатил(а)»** и пришлите чек боту.\n\n"
         f"Не забудьте указать в комментарии **Ваш Telegram ID**: `{callback.from_user.id}`"
     )
