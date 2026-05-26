@@ -128,7 +128,7 @@
             flex-direction: column;
             gap: 12px;
             margin-bottom: 20px;
-            max-height: calc(100vh - 220px);
+            max-height: calc(100vh - 240px);
             overflow-y: auto;
             padding-right: 6px;
         }
@@ -176,9 +176,10 @@
             0%,60%,100% { transform: translateY(0); opacity:0.4; }
             30% { transform: translateY(-8px); opacity:1; }
         }
+        /* Поле ввода чата — приподнято выше навигации */
         .input-wrapper {
             position: fixed;
-            bottom: 90px;
+            bottom: 120px;   /* увеличено, чтобы не перекрывалось навигацией */
             left: 20px;
             right: 20px;
             display: flex;
@@ -209,7 +210,7 @@
             cursor: pointer;
             transition: 0.2s;
         }
-        /* Стили для генерации изображений */
+        /* Контейнер для генерации изображений: кнопка ровно справа, не уезжает */
         .image-input-container {
             display: flex;
             gap: 12px;
@@ -219,6 +220,7 @@
             padding: 8px 12px;
             border: 1px solid rgba(255,255,255,0.2);
             margin: 20px 0;
+            align-items: center;
         }
         .image-input-container input {
             flex: 1;
@@ -228,6 +230,7 @@
             color: white;
             font-size: 16px;
             outline: none;
+            min-width: 0; /* предотвращает переполнение */
         }
         .image-input-container button {
             background: var(--tg-theme-button-color, #3a6ea5);
@@ -239,6 +242,7 @@
             cursor: pointer;
             white-space: nowrap;
             transition: 0.2s;
+            flex-shrink: 0;
         }
         .image-result-card {
             margin-top: 20px;
@@ -277,7 +281,6 @@
         .image-actions button:active {
             transform: scale(0.96);
         }
-        /* Модальное окно для просмотра изображения */
         .modal {
             display: none;
             position: fixed;
@@ -335,7 +338,7 @@
     </div>
 </div>
 
-<!-- Генерация изображений (исправлено) -->
+<!-- Генерация изображений -->
 <div id="image-page" class="page">
     <h2 style="margin-bottom:20px;">🎨 Генерация изображений</h2>
     <div class="model-selector" id="image-model-selector">
@@ -504,7 +507,7 @@
     });
     document.querySelector('#chat-model-selector .model-btn').classList.add('active-model');
 
-    // --- Генерация изображений с кнопками скачать и открыть ---
+    // --- Генерация изображений с работающим скачиванием ---
     let currentImageModel = 'pollinations';
     document.querySelectorAll('#image-model-selector .model-btn').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -539,21 +542,12 @@
         document.getElementById('image-modal').style.display = 'none';
     };
 
-    window.downloadImage = async (url) => {
-        try {
-            const response = await fetch(url);
-            const blob = await response.blob();
-            const link = document.createElement('a');
-            const objectUrl = URL.createObjectURL(blob);
-            link.href = objectUrl;
-            link.download = `generated_${Date.now()}.png`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(objectUrl);
-        } catch(e) {
-            tg.showAlert('Не удалось скачать изображение');
-        }
+    // Исправленная функция скачивания: открывает ссылку в браузере Telegram
+    window.downloadImage = (url) => {
+        // Используем встроенный метод Telegram WebApp для открытия ссылок
+        tg.openLink(url);
+        // Также можно показать подсказку
+        tg.showAlert('Изображение открыто в браузере. Нажмите и удерживайте для сохранения.');
     };
 
     document.getElementById('generate-img-btn').addEventListener('click', async () => {
