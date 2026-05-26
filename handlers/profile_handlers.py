@@ -1,15 +1,13 @@
-from aiogram import Router, types
-from aiogram.filters import Text
+from aiogram import Router
 from aiogram.types import CallbackQuery
 from database import get_user
 from keyboards import back_button
 
 router = Router()
 
-@router.callback_query(Text("profile"))
+@router.callback_query(lambda c: c.data == "profile")
 async def profile(callback: CallbackQuery):
-    user_id = callback.from_user.id
-    user = get_user(user_id)
+    user = get_user(callback.from_user.id)
     text = (
         "👤 **Профиль**\n\n"
         f"🆔 ID: `{user['user_id']}`\n"
