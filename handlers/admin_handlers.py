@@ -1,4 +1,5 @@
-from aiogram import Router, types, F
+from aiogram import Router, types
+from aiogram.filters import F   # правильный импорт
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import CallbackQuery, Message
