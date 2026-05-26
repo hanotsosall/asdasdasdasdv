@@ -1,5 +1,4 @@
 from aiogram import Router, types
-from aiogram.filters import Text
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import CallbackQuery, Message
@@ -10,7 +9,6 @@ from keyboards import admin_panel, back_button, admin_user_list_menu
 
 router = Router()
 
-# Состояния для админ-функций
 class AdminStates(StatesGroup):
     waiting_broadcast = State()
     waiting_balance_user_id = State()
@@ -18,12 +16,11 @@ class AdminStates(StatesGroup):
     waiting_sub_user_id = State()
     waiting_sub_days = State()
 
-# Проверка админа
 def is_admin(user_id: int) -> bool:
     return user_id == ADMIN_ID
 
 # --- Панель админа ---
-@router.callback_query(Text("admin_panel"))
+@router.callback_query(lambda c: c.data == "admin_panel")
 async def admin_panel_callback(callback: CallbackQuery):
     if not is_admin(callback.from_user.id):
         await callback.answer("Нет доступа", show_alert=True)
@@ -32,7 +29,7 @@ async def admin_panel_callback(callback: CallbackQuery):
     await callback.answer()
 
 # --- Статистика ---
-@router.callback_query(Text("admin_stats"))
+@router.callback_query(lambda c: c.data == "admin_stats")
 async def admin_stats(callback: CallbackQuery):
     if not is_admin(callback.from_user.id):
         await callback.answer("Нет доступа", show_alert=True)
@@ -54,16 +51,14 @@ async def admin_stats(callback: CallbackQuery):
     await callback.message.edit_text(text, reply_markup=back_button("admin_panel"), parse_mode="Markdown")
     await callback.answer()
 
-# --- Список пользователей (пагинация) ---
-@router.callback_query(Text(startswith="admin_users"))
+# --- Список пользователей с пагинацией ---
+@router.callback_query(lambda c: c.data.startswith("admin_users"))
 async def admin_users(callback: CallbackQuery):
     if not is_admin(callback.from_user.id):
         await callback.answer("Нет доступа", show_alert=True)
         return
-    # Определяем страницу
-    data = callback.data
-    if "page_" in data:
-        page = int(data.split("_")[-1])
+    if "page_" in callback.data:
+        page = int(callback.data.split("_")[-1])
     else:
         page = 0
     conn = sqlite3.connect(DB_PATH)
@@ -83,8 +78,8 @@ async def admin_users(callback: CallbackQuery):
     await callback.message.edit_text(text, reply_markup=admin_user_list_menu(users, page, total_pages), parse_mode="Markdown")
     await callback.answer()
 
-# --- Накрутка баланса (FSM) ---
-@router.callback_query(Text("admin_balance"))
+# --- Накрутка баланса ---
+@router.callback_query(lambda c: c.data == "admin_balance")
 async def admin_balance_start(callback: CallbackQuery, state: FSMContext):
     if not is_admin(callback.from_user.id):
         await callback.answer("Нет доступа", show_alert=True)
@@ -102,10 +97,10 @@ async def admin_balance_get_user(message: Message, state: FSMContext):
     try:
         user_id = int(message.text.strip())
         await state.update_data(target_user=user_id)
-        await message.answer("Введите **количество запросов** (можно отрицательное для списания):", reply_markup=back_button("admin_panel"))
+        await message.answer("Введите **количество запросов** (можно отрицательное):", reply_markup=back_button("admin_panel"))
         await state.set_state(AdminStates.waiting_balance_amount)
     except:
-        await message.answer("❌ Неверный user_id. Попробуй ещё раз или нажми «Назад».", reply_markup=back_button("admin_panel"))
+        await message.answer("❌ Неверный user_id. Попробуй ещё раз.", reply_markup=back_button("admin_panel"))
 
 @router.message(AdminStates.waiting_balance_amount)
 async def admin_balance_set(message: Message, state: FSMContext):
@@ -128,8 +123,8 @@ async def admin_balance_set(message: Message, state: FSMContext):
     finally:
         await state.clear()
 
-# --- Управление подпиской (FSM) ---
-@router.callback_query(Text("admin_subscription"))
+# --- Управление подпиской ---
+@router.callback_query(lambda c: c.data == "admin_subscription")
 async def admin_sub_start(callback: CallbackQuery, state: FSMContext):
     if not is_admin(callback.from_user.id):
         await callback.answer("Нет доступа", show_alert=True)
@@ -147,7 +142,7 @@ async def admin_sub_get_user(message: Message, state: FSMContext):
     try:
         user_id = int(message.text.strip())
         await state.update_data(target_user=user_id)
-        await message.answer("Введите **количество дней подписки** (0 – отключить, 30 – месяц и т.д.):", reply_markup=back_button("admin_panel"))
+        await message.answer("Введите **количество дней подписки** (0 – отключить):", reply_markup=back_button("admin_panel"))
         await state.set_state(AdminStates.waiting_sub_days)
     except:
         await message.answer("❌ Неверный user_id.", reply_markup=back_button("admin_panel"))
@@ -171,12 +166,12 @@ async def admin_sub_set(message: Message, state: FSMContext):
             update_user(target_user, subscribed=1, subscription_until=until)
             await message.answer(f"✅ Пользователю {target_user} выдана подписка на {days} дней.\nДействует до {until}.", reply_markup=back_button("admin_panel"))
     except:
-        await message.answer("❌ Ошибка. Введите целое число дней.", reply_markup=back_button("admin_panel"))
+        await message.answer("❌ Ошибка. Введите целое число.", reply_markup=back_button("admin_panel"))
     finally:
         await state.clear()
 
-# --- Рассылка (FSM) ---
-@router.callback_query(Text("admin_broadcast"))
+# --- Рассылка ---
+@router.callback_query(lambda c: c.data == "admin_broadcast")
 async def admin_broadcast_start(callback: CallbackQuery, state: FSMContext):
     if not is_admin(callback.from_user.id):
         await callback.answer("Нет доступа", show_alert=True)
