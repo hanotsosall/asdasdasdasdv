@@ -90,7 +90,7 @@
         .nav-icon { font-size: 24px; }
         .page {
             display: none;
-            padding: 80px 20px 120px 20px;  /* увеличен нижний отступ */
+            padding: 80px 20px 120px 20px;
             animation: fadeIn 0.4s ease;
         }
         .page.active { display: block; }
@@ -98,9 +98,8 @@
             from { opacity: 0; transform: translateY(10px);}
             to { opacity: 1; transform: translateY(0);}
         }
-        /* Специально для страницы изображений – больше отступа снизу */
         #image-page {
-            padding-bottom: 160px;
+            padding-bottom: 140px;
         }
         .model-selector {
             display: flex;
@@ -191,7 +190,6 @@
             border: 1px solid rgba(255,255,255,0.2);
             z-index: 90;
         }
-        /* Для страницы изображений input-wrapper не фиксированный? Нет, он фиксированный – поэтому добавим отступы */
         .input-wrapper input {
             flex: 1;
             background: transparent;
@@ -211,6 +209,94 @@
             cursor: pointer;
             transition: 0.2s;
         }
+        /* Стили для генерации изображений */
+        .image-input-container {
+            display: flex;
+            gap: 12px;
+            background: rgba(30,30,45,0.8);
+            backdrop-filter: blur(20px);
+            border-radius: 40px;
+            padding: 8px 12px;
+            border: 1px solid rgba(255,255,255,0.2);
+            margin: 20px 0;
+        }
+        .image-input-container input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            padding: 14px 10px;
+            color: white;
+            font-size: 16px;
+            outline: none;
+        }
+        .image-input-container button {
+            background: var(--tg-theme-button-color, #3a6ea5);
+            border: none;
+            border-radius: 30px;
+            padding: 0 24px;
+            font-weight: bold;
+            color: white;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: 0.2s;
+        }
+        .image-result-card {
+            margin-top: 20px;
+            text-align: center;
+            background: rgba(0,0,0,0.3);
+            border-radius: 24px;
+            padding: 16px;
+        }
+        .generated-image {
+            max-width: 100%;
+            border-radius: 24px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .generated-image:hover {
+            transform: scale(1.02);
+        }
+        .image-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-top: 16px;
+            flex-wrap: wrap;
+        }
+        .image-actions button {
+            background: rgba(255,255,255,0.15);
+            border: none;
+            border-radius: 30px;
+            padding: 8px 20px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            backdrop-filter: blur(5px);
+            transition: 0.2s;
+        }
+        .image-actions button:active {
+            transform: scale(0.96);
+        }
+        /* Модальное окно для просмотра изображения */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+        }
+        .modal img {
+            max-width: 90%;
+            max-height: 90%;
+            border-radius: 16px;
+            box-shadow: 0 0 40px rgba(0,0,0,0.5);
+        }
         .glow-button {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             border: none;
@@ -225,12 +311,6 @@
         }
         .profile-card { padding: 24px; border-radius: 32px; text-align: center; }
         .stat-row { display: flex; justify-content: space-between; margin: 16px 0; font-size: 18px; }
-        
-        /* Дополнительно: на странице изображений контейнер с результатом не должен перекрывать селектор */
-        #image-result {
-            margin-top: 30px;
-            margin-bottom: 30px;
-        }
     </style>
 </head>
 <body>
@@ -242,7 +322,7 @@
     <button class="nav-item" data-page="settings"><span class="nav-icon">⚙️</span><span>Настройки</span></button>
 </div>
 
-<!-- Страница чата -->
+<!-- Чат -->
 <div id="chat-page" class="page active">
     <div class="model-selector" id="chat-model-selector">
         <div class="model-btn" data-model="groq">🤖 Groq</div>
@@ -255,20 +335,18 @@
     </div>
 </div>
 
-<!-- Страница генерации изображений (исправлены отступы) -->
+<!-- Генерация изображений (исправлено) -->
 <div id="image-page" class="page">
     <h2 style="margin-bottom:20px;">🎨 Генерация изображений</h2>
     <div class="model-selector" id="image-model-selector">
         <div class="model-btn" data-img-model="pollinations">🌐 Pollinations</div>
         <div class="model-btn" data-img-model="nano_banana">🍌 Nano Banana</div>
     </div>
-    <!-- Здесь input-wrapper будет визуально ниже, но он фиксированный, поэтому добавим пустой блок для отступа -->
-    <div style="height: 20px;"></div>
-    <div class="input-wrapper" style="position: relative; margin-bottom: 20px; bottom: auto; left: auto; right: auto;">
+    <div class="image-input-container">
         <input type="text" id="image-prompt" placeholder="Опиши картинку...">
         <button id="generate-img-btn">✨ Сгенерить</button>
     </div>
-    <div id="image-result" style="text-align:center; margin-top:20px;"></div>
+    <div id="image-result" style="text-align:center;"></div>
 </div>
 
 <!-- Профиль -->
@@ -298,6 +376,11 @@
     </div>
 </div>
 
+<!-- Модальное окно для увеличенного просмотра -->
+<div id="image-modal" class="modal" onclick="closeModal()">
+    <img id="modal-image" src="" alt="Full size">
+</div>
+
 <script>
     const tg = window.Telegram.WebApp;
     tg.expand();
@@ -307,6 +390,7 @@
     let currentChatModel = "groq";
     let chatHistory = [];
 
+    // Частицы
     function createParticles() {
         const container = document.getElementById('particles');
         for(let i=0;i<80;i++) {
@@ -322,6 +406,7 @@
     }
     createParticles();
 
+    // Навигация
     document.querySelectorAll('.nav-item').forEach(btn => {
         btn.addEventListener('click', () => {
             let page = btn.getAttribute('data-page');
@@ -334,6 +419,7 @@
         });
     });
 
+    // --- Чат ---
     const chatContainer = document.getElementById('chat-history');
     function addMessage(role, text, animate=false) {
         let div = document.createElement('div');
@@ -418,6 +504,7 @@
     });
     document.querySelector('#chat-model-selector .model-btn').classList.add('active-model');
 
+    // --- Генерация изображений с кнопками скачать и открыть ---
     let currentImageModel = 'pollinations';
     document.querySelectorAll('#image-model-selector .model-btn').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -427,6 +514,48 @@
         });
     });
     document.querySelector('#image-model-selector .model-btn').classList.add('active-model');
+
+    function displayImageWithActions(imageUrl) {
+        const container = document.getElementById('image-result');
+        container.innerHTML = `
+            <div class="image-result-card">
+                <img src="${imageUrl}" class="generated-image" onclick="openFullImage('${imageUrl}')" alt="Generated">
+                <div class="image-actions">
+                    <button onclick="openFullImage('${imageUrl}')">🔍 Открыть в полном размере</button>
+                    <button onclick="downloadImage('${imageUrl}')">⬇️ Скачать</button>
+                </div>
+            </div>
+        `;
+    }
+
+    window.openFullImage = (url) => {
+        const modal = document.getElementById('image-modal');
+        const modalImg = document.getElementById('modal-image');
+        modal.style.display = 'flex';
+        modalImg.src = url;
+    };
+
+    window.closeModal = () => {
+        document.getElementById('image-modal').style.display = 'none';
+    };
+
+    window.downloadImage = async (url) => {
+        try {
+            const response = await fetch(url);
+            const blob = await response.blob();
+            const link = document.createElement('a');
+            const objectUrl = URL.createObjectURL(blob);
+            link.href = objectUrl;
+            link.download = `generated_${Date.now()}.png`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(objectUrl);
+        } catch(e) {
+            tg.showAlert('Не удалось скачать изображение');
+        }
+    };
+
     document.getElementById('generate-img-btn').addEventListener('click', async () => {
         let prompt = document.getElementById('image-prompt').value.trim();
         if(!prompt) return;
@@ -438,11 +567,17 @@
                 body: JSON.stringify({ prompt, model: currentImageModel, user_id: tg.initDataUnsafe?.user?.id || 0 })
             });
             let data = await res.json();
-            if(data.url) resDiv.innerHTML = `<img src="${data.url}" style="max-width:100%; border-radius:24px;">`;
-            else resDiv.innerHTML = `<div style="color:red;">❌ Ошибка: ${data.error}</div>`;
-        } catch(e) { resDiv.innerHTML = `<div style="color:red;">❌ Ошибка сети</div>`; }
+            if(data.url) {
+                displayImageWithActions(data.url);
+            } else {
+                resDiv.innerHTML = `<div style="color:red;">❌ Ошибка: ${data.error}</div>`;
+            }
+        } catch(e) {
+            resDiv.innerHTML = `<div style="color:red;">❌ Ошибка сети: ${e.message}</div>`;
+        }
     });
 
+    // --- Профиль ---
     async function loadProfile() {
         let uid = tg.initDataUnsafe?.user?.id;
         if(!uid) return;
@@ -455,6 +590,8 @@
         document.getElementById('profile-total-req').innerText = data.total_requests;
     }
     document.getElementById('refresh-profile').addEventListener('click', loadProfile);
+
+    // --- Настройки ---
     async function loadSettings() {
         let uid = tg.initDataUnsafe?.user?.id;
         if(!uid) return;
