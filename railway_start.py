@@ -13,8 +13,8 @@ from handlers.payment_handlers import router as payment_router
 from handlers.admin_handlers import router as admin_router
 from handlers.settings_handlers import router as settings_router
 from handlers.message_handler import router as message_router
-from handlers.webapp_handler import router as webapp_router   # если есть
-import webapp_server   # твой FastAPI сервер
+# from handlers.webapp_handler import router as webapp_router   # УДАЛИ ЭТУ СТРОКУ
+import webapp_server
 
 async def run_bot():
     init_db()
@@ -29,8 +29,8 @@ async def run_bot():
     dp.include_router(admin_router)
     dp.include_router(settings_router)
     dp.include_router(message_router)
-    if 'webapp_router' in globals():
-        dp.include_router(webapp_router)
+    # if 'webapp_router' in globals():
+    #     dp.include_router(webapp_router)
     await dp.start_polling(bot)
 
 async def run_api():
