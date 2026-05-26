@@ -1,5 +1,5 @@
 from aiogram import Router, types
-from aiogram.filters import F
+from aiogram.filters import Text, StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from utils.image_gen import generate_image
@@ -11,7 +11,7 @@ router = Router()
 class ImageState(StatesGroup):
     waiting_prompt = State()
 
-@router.callback_query(F.data == "generate_image_menu")
+@router.callback_query(Text("generate_image_menu"))
 async def image_menu_callback(callback: types.CallbackQuery, state: FSMContext):
     await state.clear()
     await callback.message.edit_text(
@@ -21,7 +21,7 @@ async def image_menu_callback(callback: types.CallbackQuery, state: FSMContext):
     )
     await callback.answer()
 
-@router.callback_query(F.data == "generate_image")
+@router.callback_query(Text("generate_image"))
 async def image_generation_request(callback: types.CallbackQuery, state: FSMContext):
     await callback.message.edit_text(
         "🖼 Отправь описание изображения:",
@@ -30,7 +30,7 @@ async def image_generation_request(callback: types.CallbackQuery, state: FSMCont
     await state.set_state(ImageState.waiting_prompt)
     await callback.answer()
 
-@router.message(ImageState.waiting_prompt, F.text)
+@router.message(ImageState.waiting_prompt, Text())
 async def generate_image_from_prompt(message: types.Message, state: FSMContext):
     prompt = message.text
     user_id = message.from_user.id
