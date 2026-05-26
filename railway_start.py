@@ -1,0 +1,46 @@
+import asyncio
+import os
+import uvicorn
+from aiogram import Bot, Dispatcher
+from config import BOT_TOKEN
+from database import init_db
+from handlers.start import router as start_router
+from handlers.ai_handlers import router as ai_router
+from handlers.image_handlers import router as image_router
+from handlers.profile_handlers import router as profile_router
+from handlers.referral_handlers import router as referral_router
+from handlers.payment_handlers import router as payment_router
+from handlers.admin_handlers import router as admin_router
+from handlers.settings_handlers import router as settings_router
+from handlers.message_handler import router as message_router
+from handlers.webapp_handler import router as webapp_router   # если есть
+import webapp_server   # твой FastAPI сервер
+
+async def run_bot():
+    init_db()
+    bot = Bot(token=BOT_TOKEN)
+    dp = Dispatcher()
+    dp.include_router(start_router)
+    dp.include_router(ai_router)
+    dp.include_router(image_router)
+    dp.include_router(profile_router)
+    dp.include_router(referral_router)
+    dp.include_router(payment_router)
+    dp.include_router(admin_router)
+    dp.include_router(settings_router)
+    dp.include_router(message_router)
+    if 'webapp_router' in globals():
+        dp.include_router(webapp_router)
+    await dp.start_polling(bot)
+
+async def run_api():
+    port = int(os.environ.get("PORT", 8000))
+    config = uvicorn.Config(webapp_server.app, host="0.0.0.0", port=port, log_level="info")
+    server = uvicorn.Server(config)
+    await server.serve()
+
+async def main():
+    await asyncio.gather(run_bot(), run_api())
+
+if __name__ == "__main__":
+    asyncio.run(main())
