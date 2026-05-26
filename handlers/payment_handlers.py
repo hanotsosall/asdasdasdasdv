@@ -1,25 +1,21 @@
-from aiogram import Router, types
-from aiogram.filters import Text
+from aiogram import Router
+from aiogram.types import CallbackQuery
 from keyboards import back_button
 
 router = Router()
 
-@router.callback_query(F.data == "donate")
-async def donate(callback: types.CallbackQuery):
+@router.callback_query(lambda c: c.data == "donate")
+async def donate(callback: CallbackQuery):
     await callback.message.edit_text(
-        "⭐ **Поддержать проект**\n\n"
-        "Скоро здесь появится приём Telegram Stars.\n"
-        "Пока можно просто рассказать о боте друзьям 😊",
+        "⭐ **Поддержать проект**\n\nСкоро здесь появится приём Telegram Stars.",
         reply_markup=back_button()
     )
     await callback.answer()
 
-@router.callback_query(F.data == "subscription")
-async def subscription(callback: types.CallbackQuery):
+@router.callback_query(lambda c: c.data == "subscription")
+async def subscription(callback: CallbackQuery):
     await callback.message.edit_text(
-        "💎 **Подписка**\n\n"
-        "Скоро здесь появятся платные тарифы.\n"
-        "А пока приглашай друзей и получай бонусные запросы!",
+        "💎 **Подписка**\n\nСкоро здесь появятся платные тарифы.",
         reply_markup=back_button()
     )
     await callback.answer()
