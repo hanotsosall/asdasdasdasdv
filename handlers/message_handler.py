@@ -1,4 +1,5 @@
-from aiogram import Router, types, F
+from aiogram import Router, types
+from aiogram.filters import F
 from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
 from database import get_user, update_user, add_history, get_history
