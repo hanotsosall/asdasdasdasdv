@@ -1,4 +1,5 @@
-from aiogram import Router, types, F
+from aiogram import Router, types
+from aiogram.filters import F
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from utils.image_gen import generate_image
