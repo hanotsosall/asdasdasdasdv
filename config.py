@@ -12,4 +12,4 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 # Модели по умолчанию
 GROQ_MODEL = "llama-3.3-70b-versatile"
 DEEPSEEK_MODEL = "deepseek-chat"
-GEMINI_MODEL = "gemini-1.5-flash"   # <-- изменено с gemini-1.5-pro
+GEMINI_MODEL = "gemini-pro"   # <-- изменено с gemini-1.5-pro
