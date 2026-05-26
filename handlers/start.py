@@ -1,9 +1,8 @@
 from aiogram import Router, types
 from aiogram.filters import Command
+from aiogram.types import CallbackQuery, F
 from database import get_user, add_referral
 from keyboards import main_menu
-from config import ADMIN_ID
-from keyboards import admin_panel
 
 router = Router()
 
@@ -24,11 +23,19 @@ async def cmd_start(message: types.Message):
         "➕ Приглашай друзей (+5 запросов за каждого).\n"
         "👇 Выбери действие:"
     )
-    await message.answer(text, reply_markup=main_menu(), parse_mode="Markdown")
+    await message.answer(text, reply_markup=main_menu(user_id), parse_mode="Markdown")
 
-@router.message(Command("admin"))
-async def admin_command(message: types.Message):
-    if message.from_user.id == ADMIN_ID:
-        await message.answer("👑 Админ-панель", reply_markup=admin_panel())
-    else:
-        await message.answer("Нет доступа")
+@router.callback_query(F.data == "main_menu")
+async def back_to_main_menu(callback: CallbackQuery):
+    user_id = callback.from_user.id
+    user = get_user(user_id)
+    text = (
+        "🚀 **Ultimate AI Bot**\n\n"
+        "Я объединяю **Groq (LLaMA 3)** и **DeepSeek** – две мощные нейросети.\n"
+        "🎨 Генерирую изображения по тексту.\n\n"
+        f"💎 У тебя осталось **{user['balance_requests']}** бесплатных запросов.\n"
+        "➕ Приглашай друзей (+5 запросов за каждого).\n"
+        "👇 Выбери действие:"
+    )
+    await callback.message.edit_text(text, reply_markup=main_menu(user_id), parse_mode="Markdown")
+    await callback.answer()
