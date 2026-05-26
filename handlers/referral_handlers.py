@@ -1,12 +1,12 @@
-from aiogram import Router, types
-from aiogram.filters import Text
+from aiogram import Router
+from aiogram.types import CallbackQuery
 from database import get_user
 from keyboards import back_button
 
 router = Router()
 
-@router.callback_query(F.data == "referral")
-async def referral_menu(callback: types.CallbackQuery):
+@router.callback_query(lambda c: c.data == "referral")
+async def referral_menu(callback: CallbackQuery):
     user_id = callback.from_user.id
     bot_username = (await callback.bot.get_me()).username
     link = f"https://t.me/{bot_username}?start=ref_{user_id}"
