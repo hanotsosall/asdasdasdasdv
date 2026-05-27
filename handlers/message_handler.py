@@ -4,6 +4,7 @@ from aiogram.types import Message
 from database import get_user, update_user, add_history, get_history, is_user_banned
 from utils.groq_client import ask_groq_with_history
 from utils.gemini_client import ask_gemini_with_history
+from utils.markdown_helper import markdown_to_html
 
 router = Router()
 
@@ -29,9 +30,10 @@ async def handle_default_ai(message: Message, state: FSMContext):
             answer = ask_groq_with_history(message.text, history)
         else:
             answer = ask_gemini_with_history(message.text, history)
+        answer_html = markdown_to_html(answer)
         add_history(user_id, ai_name, "user", message.text)
         add_history(user_id, ai_name, "assistant", answer)
         update_user(user_id, balance_requests=user['balance_requests']-1, total_requests=user['total_requests']+1)
-        await message.answer(answer)
+        await message.answer(answer_html, parse_mode="HTML")
     except Exception as e:
-        await message.answer(f"⚠️ Ошибка: {e}")
+        await message.answer(f"⚠️ Ошибка: {e}", parse_mode="HTML")
