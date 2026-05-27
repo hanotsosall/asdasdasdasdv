@@ -53,6 +53,22 @@ def init_db():
             timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS banned_users (
+            user_id INTEGER PRIMARY KEY,
+            reason TEXT,
+            banned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS required_channels (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            channel_id INTEGER UNIQUE,
+            channel_username TEXT,
+            channel_link TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
     conn.commit()
     conn.close()
 
@@ -67,11 +83,9 @@ def get_user(user_id: int):
         c.execute("SELECT * FROM users WHERE user_id = ?", (user_id,))
         row = c.fetchone()
     conn.close()
-    columns = [
-        "user_id", "username", "first_name", "balance_requests",
-        "subscribed", "subscription_until", "ref_count", "ref_by",
-        "total_requests", "total_images", "reg_date", "default_ai", "image_model"
-    ]
+    columns = ["user_id", "username", "first_name", "balance_requests",
+               "subscribed", "subscription_until", "ref_count", "ref_by",
+               "total_requests", "total_images", "reg_date", "default_ai", "image_model"]
     return dict(zip(columns, row))
 
 def update_user(user_id: int, **kwargs):
@@ -94,28 +108,21 @@ def add_referral(referrer_id: int, referred_id: int):
         pass
     conn.close()
 
-# === Функции для истории диалогов ===
-
 def add_history(user_id: int, ai_name: str, role: str, content: str):
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    c.execute(
-        "INSERT INTO chat_history (user_id, ai_name, role, content) VALUES (?, ?, ?, ?)",
-        (user_id, ai_name, role, content)
-    )
+    c.execute("INSERT INTO chat_history (user_id, ai_name, role, content) VALUES (?, ?, ?, ?)",
+              (user_id, ai_name, role, content))
     conn.commit()
     conn.close()
 
 def get_history(user_id: int, ai_name: str, limit: int = 10) -> list:
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    c.execute(
-        "SELECT role, content FROM chat_history WHERE user_id = ? AND ai_name = ? ORDER BY timestamp DESC LIMIT ?",
-        (user_id, ai_name, limit)
-    )
+    c.execute("SELECT role, content FROM chat_history WHERE user_id = ? AND ai_name = ? ORDER BY timestamp DESC LIMIT ?",
+              (user_id, ai_name, limit))
     rows = c.fetchall()
     conn.close()
-    # возвращаем в хронологическом порядке (старые → новые)
     return list(reversed(rows))
 
 def clear_history(user_id: int, ai_name: str = None):
@@ -127,3 +134,74 @@ def clear_history(user_id: int, ai_name: str = None):
         c.execute("DELETE FROM chat_history WHERE user_id = ?", (user_id,))
     conn.commit()
     conn.close()
+
+def get_all_users(limit: int, offset: int):
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    c = conn.cursor()
+    c.execute("SELECT user_id, username, first_name, balance_requests, subscribed, total_requests FROM users LIMIT ? OFFSET ?", (limit, offset))
+    rows = c.fetchall()
+    conn.close()
+    return [dict(row) for row in rows]
+
+def count_users():
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("SELECT COUNT(*) FROM users")
+    count = c.fetchone()[0]
+    conn.close()
+    return count
+
+def is_user_banned(user_id: int):
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("SELECT 1 FROM banned_users WHERE user_id = ?", (user_id,))
+    banned = c.fetchone() is not None
+    conn.close()
+    return banned
+
+def ban_user(user_id: int, reason: str = ""):
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("INSERT OR IGNORE INTO banned_users (user_id, reason) VALUES (?, ?)", (user_id, reason))
+    conn.commit()
+    conn.close()
+
+def unban_user(user_id: int):
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("DELETE FROM banned_users WHERE user_id = ?", (user_id,))
+    conn.commit()
+    conn.close()
+
+# ---- Функции для работы с обязательными каналами ----
+def add_required_channel(channel_id: int, channel_username: str, channel_link: str):
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("INSERT OR REPLACE INTO required_channels (channel_id, channel_username, channel_link) VALUES (?, ?, ?)",
+              (channel_id, channel_username, channel_link))
+    conn.commit()
+    conn.close()
+
+def remove_required_channel(channel_id: int):
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("DELETE FROM required_channels WHERE channel_id = ?", (channel_id,))
+    conn.commit()
+    conn.close()
+
+def get_required_channels():
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("SELECT channel_id, channel_username, channel_link FROM required_channels")
+    rows = c.fetchall()
+    conn.close()
+    return [{"id": row[0], "username": row[1], "link": row[2]} for row in rows]
+
+def is_channel_required(channel_id: int) -> bool:
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("SELECT 1 FROM required_channels WHERE channel_id = ?", (channel_id,))
+    exists = c.fetchone() is not None
+    conn.close()
+    return exists
