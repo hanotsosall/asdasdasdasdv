@@ -1,6 +1,5 @@
 from aiogram import Router, types
 from aiogram.filters.command import Command
-from aiogram.types import CallbackQuery
 from database import get_user, add_referral
 from keyboards import main_menu
 
@@ -17,7 +16,7 @@ async def cmd_start(message: types.Message):
     user = get_user(user_id)
     text = (
         "🚀 **Ultimate AI Bot**\n\n"
-        "Я объединяю **Groq (LLaMA 3)** и **DeepSeek** – две мощные нейросети.\n"
+        "Я объединяю **Groq (LLaMA 3)** и **OpenAI (GPT-3.5)** – две мощные нейросети.\n"
         "🎨 Генерирую изображения по тексту.\n\n"
         f"💎 У тебя осталось **{user['balance_requests']}** бесплатных запросов.\n"
         "➕ Приглашай друзей (+5 запросов за каждого).\n"
@@ -25,14 +24,13 @@ async def cmd_start(message: types.Message):
     )
     await message.answer(text, reply_markup=main_menu(user_id), parse_mode="Markdown")
 
-# Вместо F.data == "main_menu" используем lambda
 @router.callback_query(lambda c: c.data == "main_menu")
-async def back_to_main_menu(callback: CallbackQuery):
+async def back_to_main_menu(callback: types.CallbackQuery):
     user_id = callback.from_user.id
     user = get_user(user_id)
     text = (
         "🚀 **Ultimate AI Bot**\n\n"
-        "Я объединяю **Groq (LLaMA 3)** и **DeepSeek** – две мощные нейросети.\n"
+        "Я объединяю **Groq (LLaMA 3)** и **OpenAI (GPT-3.5)** – две мощные нейросети.\n"
         "🎨 Генерирую изображения по тексту.\n\n"
         f"💎 У тебя осталось **{user['balance_requests']}** бесплатных запросов.\n"
         "➕ Приглашай друзей (+5 запросов за каждого).\n"
