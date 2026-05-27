@@ -8,7 +8,7 @@ from typing import List, Dict
 import uvicorn
 from database import get_user, update_user, add_history, clear_history
 from utils.groq_client import ask_groq_with_history
-from utils.openai_client import ask_openai_with_history
+from utils.gemini_client import ask_gemini_with_history
 from utils.image_gen import generate_image
 
 app = FastAPI()
@@ -20,7 +20,7 @@ async def root():
     return FileResponse("static/index.html")
 
 class ChatReq(BaseModel):
-    model: str
+    model: str   # groq или gemini
     message: str
     user_id: int
     history: List[Dict[str, str]]
@@ -39,7 +39,7 @@ class ClearHistoryReq(BaseModel):
 
 @app.post("/api/chat")
 async def chat(req: ChatReq):
-    if req.model not in ("groq", "openai"):
+    if req.model not in ("groq", "gemini"):
         return {"reply": "❌ Модель не поддерживается"}
     user = get_user(req.user_id)
     if user['balance_requests'] <= 0 and not user['subscribed']:
@@ -48,7 +48,7 @@ async def chat(req: ChatReq):
     if req.model == "groq":
         answer = ask_groq_with_history(req.message, history)
     else:
-        answer = ask_openai_with_history(req.message, history)
+        answer = ask_gemini_with_history(req.message, history)
     add_history(req.user_id, req.model, "user", req.message)
     add_history(req.user_id, req.model, "assistant", answer)
     update_user(req.user_id, balance_requests=user['balance_requests']-1, total_requests=user['total_requests']+1)
@@ -56,7 +56,7 @@ async def chat(req: ChatReq):
 
 @app.post("/api/generate_image")
 async def gen_image(req: ImageReq):
-    url = await generate_image(req.prompt, req.model)
+    url = await generate_image(req.prompt, req.model)  # req.model = pollinations / nano_banana
     if url:
         user = get_user(req.user_id)
         update_user(req.user_id, total_images=user['total_images']+1)
@@ -76,7 +76,7 @@ async def profile(user_id: int):
 
 @app.post("/api/set_default_ai")
 async def set_default(req: SetDefaultAI):
-    if req.default_ai not in ("groq", "openai"):
+    if req.default_ai not in ("groq", "gemini"):
         return {"error": "Недопустимая модель"}
     update_user(req.user_id, default_ai=req.default_ai)
     return {"status": "ok"}
@@ -85,7 +85,7 @@ async def set_default(req: SetDefaultAI):
 async def get_settings(user_id: int):
     u = get_user(user_id)
     default = u['default_ai']
-    if default not in ("groq", "openai"):
+    if default not in ("groq", "gemini"):
         default = "groq"
         update_user(user_id, default_ai=default)
     return {"default_ai": default}
