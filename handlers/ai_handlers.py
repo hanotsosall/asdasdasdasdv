@@ -4,14 +4,14 @@ from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import CallbackQuery, Message
 from database import get_user, update_user, add_history, get_history
 from utils.groq_client import ask_groq_with_history
-from utils.openai_client import ask_openai_with_history
+from utils.gemini_client import ask_gemini_with_history
 from keyboards import back_button
 
 router = Router()
 
 class AIState(StatesGroup):
     waiting_groq = State()
-    waiting_openai = State()
+    waiting_gemini = State()
 
 @router.callback_query(lambda c: c.data == "ai_groq")
 async def ask_groq_menu(callback: CallbackQuery, state: FSMContext):
@@ -19,10 +19,10 @@ async def ask_groq_menu(callback: CallbackQuery, state: FSMContext):
     await state.set_state(AIState.waiting_groq)
     await callback.answer()
 
-@router.callback_query(lambda c: c.data == "ai_openai")
-async def ask_openai_menu(callback: CallbackQuery, state: FSMContext):
-    await callback.message.edit_text("🧠 Отправь запрос для OpenAI (GPT-3.5):", reply_markup=back_button())
-    await state.set_state(AIState.waiting_openai)
+@router.callback_query(lambda c: c.data == "ai_gemini")
+async def ask_gemini_menu(callback: CallbackQuery, state: FSMContext):
+    await callback.message.edit_text("✨ Отправь запрос для Google Gemini (1.5 Flash):", reply_markup=back_button())
+    await state.set_state(AIState.waiting_gemini)
     await callback.answer()
 
 async def process_ai_message(message: Message, state: FSMContext, ai_name: str, api_func):
@@ -49,6 +49,6 @@ async def process_ai_message(message: Message, state: FSMContext, ai_name: str, 
 async def handle_groq(message: Message, state: FSMContext):
     await process_ai_message(message, state, "groq", ask_groq_with_history)
 
-@router.message(AIState.waiting_openai)
-async def handle_openai(message: Message, state: FSMContext):
-    await process_ai_message(message, state, "openai", ask_openai_with_history)
+@router.message(AIState.waiting_gemini)
+async def handle_gemini(message: Message, state: FSMContext):
+    await process_ai_message(message, state, "gemini", ask_gemini_with_history)
