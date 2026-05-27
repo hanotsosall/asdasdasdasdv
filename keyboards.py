@@ -5,7 +5,7 @@ def main_menu(user_id: int):
     buttons = [
         [
             InlineKeyboardButton(text="🤖 Groq (LLaMA 3)", callback_data="ai_groq"),
-            InlineKeyboardButton(text="✨ Gemini (1.5 Flash)", callback_data="ai_openai")
+            InlineKeyboardButton(text="✨ Gemini (1.5 Flash)", callback_data="ai_gemini")
         ],
         [
             InlineKeyboardButton(text="🎨 Генерация изображения", callback_data="generate_image_menu")
@@ -38,7 +38,6 @@ def admin_panel():
         [InlineKeyboardButton(text="👥 Список пользователей", callback_data="admin_users")],
         [InlineKeyboardButton(text="💰 Накрутка баланса", callback_data="admin_balance")],
         [InlineKeyboardButton(text="⭐ Управление подпиской", callback_data="admin_subscription")],
-        [InlineKeyboardButton(text="📢 Управление каналами", callback_data="admin_channels")],
         [InlineKeyboardButton(text="◀️ Выход", callback_data="main_menu")]
     ])
 
@@ -79,19 +78,20 @@ def settings_menu(current_ai: str):
 def ai_choice_menu():
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="Groq", callback_data="set_ai_groq"),
-         InlineKeyboardButton(text="OpenAI", callback_data="set_ai_openai")],
+         InlineKeyboardButton(text="Gemini", callback_data="set_ai_gemini")],
         [InlineKeyboardButton(text="◀️ Назад", callback_data="settings")]
     ])
 
 def image_model_menu(current_model: str = "pollinations"):
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text=f"🌐 Pollinations {'✅' if current_model=='pollinations' else ''}", callback_data="set_image_model_pollinations")],
-        [InlineKeyboardButton(text=f"🍌 Nano Banana {'✅' if current_model=='nano_banana' else ''}", callback_data="set_image_model_nano_banana")],
         [InlineKeyboardButton(text="◀️ Назад", callback_data="settings")]
     ])
 
 def image_generation_menu():
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="🎨 Сгенерировать изображение", callback_data="generate_image")],
+        [InlineKeyboardButton(text="◀️ Назад", callback_data="main_menu")]
+    ])        [InlineKeyboardButton(text="🎨 Сгенерировать изображение", callback_data="generate_image")],
         [InlineKeyboardButton(text="◀️ Назад", callback_data="main_menu")]
     ])
