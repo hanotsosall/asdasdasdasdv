@@ -152,7 +152,7 @@ def count_users():
     conn.close()
     return count
 
-def is_user_banned(user_id: int):
+def is_user_banned(user_id: int) -> bool:
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("SELECT 1 FROM banned_users WHERE user_id = ?", (user_id,))
@@ -174,7 +174,6 @@ def unban_user(user_id: int):
     conn.commit()
     conn.close()
 
-# ---- Функции для работы с обязательными каналами ----
 def add_required_channel(channel_id: int, channel_username: str, channel_link: str):
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
