@@ -13,17 +13,17 @@ class PaymentStates(StatesGroup):
 @router.callback_query(lambda c: c.data == "donate")
 async def donate_menu(callback: types.CallbackQuery):
     text = (
-        "⭐ **Поддержать проект**\n\n"
+        "⭐ <b>Поддержать проект</b>\n\n"
         "Вы можете приобрести:\n"
-        "🎁 **10 запросов** – 50₽\n"
-        "🎁 **50 запросов** – 200₽\n"
-        "🎁 **100 запросов** – 350₽\n"
-        "👑 **Подписка на 30 дней (безлимит)** – 500₽\n\n"
-        "**Как оплатить:**\n"
-        "1. Переведите нужную сумму на карту\n"
-        "2. Отправьте **чек оплаты** (скриншот) в этот чат.\n"
+        "🎁 <b>10 запросов</b> – 50₽\n"
+        "🎁 <b>50 запросов</b> – 200₽\n"
+        "🎁 <b>100 запросов</b> – 350₽\n"
+        "👑 <b>Подписка на 30 дней (безлимит)</b> – 500₽\n\n"
+        "Как оплатить:\n"
+        "1. Переведите нужную сумму на карту: <code>XXXX XXXX XXXX XXXX</code>\n"
+        "2. Отправьте чек (скриншот) в этот чат.\n"
         "3. Администратор проверит и начислит запросы.\n\n"
-        "После оплаты нажмите кнопку **«Я оплатил(а)»**."
+        "После оплаты нажмите <b>«Я оплатил(а)»</b>."
     )
     keyboard = types.InlineKeyboardMarkup(inline_keyboard=[
         [types.InlineKeyboardButton(text="💎 10 запросов (50₽)", callback_data="buy_balance_10")],
@@ -33,7 +33,7 @@ async def donate_menu(callback: types.CallbackQuery):
         [types.InlineKeyboardButton(text="✅ Я оплатил(а)", callback_data="payment_done")],
         [types.InlineKeyboardButton(text="◀️ Назад", callback_data="main_menu")]
     ])
-    await callback.message.edit_text(text, reply_markup=keyboard, parse_mode="Markdown")
+    await callback.message.edit_text(text, reply_markup=keyboard, parse_mode="HTML")
     await callback.answer()
 
 @router.callback_query(lambda c: c.data.startswith("buy_"))
@@ -42,17 +42,18 @@ async def buy_product(callback: types.CallbackQuery, state: FSMContext):
     await state.update_data(product=product_key)
     await callback.message.answer(
         f"✅ Вы выбрали товар.\n\n"
-        f"**Реквизиты для оплаты:**\n"
-        f"Тинькофф: `2200 7021 2282 7293`\n"
-        f"Сбербанк: `2202 2080 8392 4705`\n\n"
-        f"После перевода нажмите **«Я оплатил(а)»** и пришлите чек.\n"
-        f"Укажите в комментарии ID: `{callback.from_user.id}`"
+        f"<b>Реквизиты для оплаты:</b>\n"
+        f"Тинькофф: <code>+7 XXX XXX-XX-XX</code>\n"
+        f"Сбербанк: <code>XXXX XXXX XXXX XXXX</code>\n\n"
+        f"После перевода нажмите <b>«Я оплатил(а)»</b> и пришлите чек.\n"
+        f"Укажите в комментарии ID: <code>{callback.from_user.id}</code>",
+        parse_mode="HTML"
     )
     await callback.answer()
 
 @router.callback_query(lambda c: c.data == "payment_done")
 async def payment_done(callback: types.CallbackQuery, state: FSMContext):
-    await callback.message.answer("📸 Отправьте чек (фото или скриншот). Администратор проверит.")
+    await callback.message.answer("📸 Отправьте чек (фото или скриншот). Администратор проверит.", parse_mode="HTML")
     await state.set_state(PaymentStates.waiting_receipt)
     await callback.answer()
 
@@ -61,19 +62,18 @@ async def handle_receipt(message: types.Message, state: FSMContext):
     data = await state.get_data()
     product = data.get("product", "неизвестно")
     admin_text = (
-        f"📢 **Новый платёж**\n"
-        f"👤 User ID: {message.from_user.id}\n"
-        f"📦 Товар: {product}\n"
-        f"💬 Сообщение: {message.text if message.text else 'Фото'}"
+        f"📢 <b>Новый платёж</b>\n"
+        f"👤 User ID: <code>{message.from_user.id}</code>\n"
+        f"📦 Товар: {product}"
     )
-    await message.bot.send_message(ADMIN_ID, admin_text, parse_mode="Markdown")
+    await message.bot.send_message(ADMIN_ID, admin_text, parse_mode="HTML")
     if message.photo:
         await message.bot.send_photo(ADMIN_ID, message.photo[-1].file_id, caption="Чек")
     elif message.document:
         await message.bot.send_document(ADMIN_ID, message.document.file_id, caption="Чек")
     else:
         await message.bot.send_message(ADMIN_ID, message.text)
-    await message.answer("✅ Чек отправлен. Ожидайте начисления.")
+    await message.answer("✅ Чек отправлен. Ожидайте начисления.", parse_mode="HTML")
     await state.clear()
 
 @router.message(Command("add_balance"))
@@ -82,7 +82,7 @@ async def admin_add_balance(message: types.Message):
         return
     args = message.text.split()
     if len(args) != 3:
-        await message.answer("Использование: /add_balance <user_id> <количество>")
+        await message.answer("Использование: /add_balance <user_id> <количество>", parse_mode="HTML")
         return
     try:
         user_id = int(args[1])
@@ -90,7 +90,7 @@ async def admin_add_balance(message: types.Message):
         user = get_user(user_id)
         new_balance = user['balance_requests'] + amount
         update_user(user_id, balance_requests=new_balance)
-        await message.answer(f"✅ Добавлено {amount} запросов пользователю {user_id}. Баланс: {new_balance}")
-        await message.bot.send_message(user_id, f"💰 Вам начислено {amount} запросов! Новый баланс: {new_balance}")
+        await message.answer(f"✅ Добавлено {amount} запросов пользователю {user_id}. Баланс: {new_balance}", parse_mode="HTML")
+        await message.bot.send_message(user_id, f"💰 Вам начислено {amount} запросов! Новый баланс: {new_balance}", parse_mode="HTML")
     except:
-        await message.answer("Ошибка. Проверьте ID и сумму.")
+        await message.answer("Ошибка. Проверьте ID и сумму.", parse_mode="HTML")
