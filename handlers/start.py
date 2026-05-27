@@ -16,7 +16,7 @@ async def cmd_start(message: types.Message):
     user = get_user(user_id)
     text = (
         "🚀 **Ultimate AI Bot**\n\n"
-        "Я объединяю **Groq (LLaMA 3)** и **OpenAI (GPT-3.5)** – две мощные нейросети.\n"
+        "Я объединяю **Groq (LLaMA 3)** и **Gemini (1.5 Flash)** – две мощные нейросети.\n"
         "🎨 Генерирую изображения по тексту.\n\n"
         f"💎 У тебя осталось **{user['balance_requests']}** бесплатных запросов.\n"
         "➕ Приглашай друзей (+5 запросов за каждого).\n"
