@@ -5,6 +5,7 @@ from aiogram.types import CallbackQuery, Message
 from database import get_user, update_user, add_history, get_history
 from utils.groq_client import ask_groq_with_history
 from utils.gemini_client import ask_gemini_with_history
+from utils.markdown_helper import markdown_to_html
 from keyboards import back_button
 
 router = Router()
@@ -37,12 +38,13 @@ async def process_ai_message(message: Message, state: FSMContext, ai_name: str, 
     await message.bot.send_chat_action(message.chat.id, "typing")
     try:
         answer = api_func(prompt, history)
+        answer_html = markdown_to_html(answer)   # преобразуем Markdown в HTML
         add_history(user_id, ai_name, "user", prompt)
         add_history(user_id, ai_name, "assistant", answer)
         update_user(user_id, balance_requests=user['balance_requests']-1, total_requests=user['total_requests']+1)
-        await message.answer(answer)
+        await message.answer(answer_html, parse_mode="HTML")
     except Exception as e:
-        await message.answer(f"⚠️ Ошибка {ai_name}: {e}")
+        await message.answer(f"⚠️ Ошибка {ai_name}: {e}", parse_mode="HTML")
     await state.clear()
 
 @router.message(AIState.waiting_groq)
