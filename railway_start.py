@@ -20,15 +20,17 @@ async def run_bot():
     init_db()
     bot = Bot(token=BOT_TOKEN)
     dp = Dispatcher()
+    # Подключаем middleware проверки подписки (админ пропускается внутри middleware)
     dp.message.middleware(SubscriptionMiddleware())
     dp.callback_query.middleware(SubscriptionMiddleware())
+    # Подключаем роутеры
     dp.include_router(start_router)
     dp.include_router(ai_router)
     dp.include_router(image_router)
     dp.include_router(profile_router)
     dp.include_router(referral_router)
     dp.include_router(payment_router)
-    dp.include_router(admin_router)
+    dp.include_router(admin_router)   # обязательно!
     dp.include_router(settings_router)
     dp.include_router(message_router)
     await dp.start_polling(bot)
