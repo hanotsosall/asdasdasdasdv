@@ -5,7 +5,7 @@ def main_menu(user_id: int):
     buttons = [
         [
             InlineKeyboardButton(text="🤖 Groq (LLaMA 3)", callback_data="ai_groq"),
-            InlineKeyboardButton(text="🧠 OpenAI (GPT-3.5)", callback_data="ai_openai")
+            InlineKeyboardButton(text="✨ Gemini (1.5 Flash)", callback_data="ai_openai")
         ],
         [
             InlineKeyboardButton(text="🎨 Генерация изображения", callback_data="generate_image_menu")
