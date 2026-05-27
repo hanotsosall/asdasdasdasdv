@@ -56,7 +56,7 @@ async def chat(req: ChatReq):
 
 @app.post("/api/generate_image")
 async def gen_image(req: ImageReq):
-    url = await generate_image(req.prompt, req.model)  # req.model = pollinations / nano_banana
+    url = await generate_image(req.prompt, "pollinations")  # игнорируем req.model
     if url:
         user = get_user(req.user_id)
         update_user(req.user_id, total_images=user['total_images']+1)
