@@ -16,7 +16,7 @@ class SubscriptionMiddleware(BaseMiddleware):
         else:
             user_id = event.from_user.id
 
-        # Администратора не проверяем
+        # Администратора не проверяем – сразу пропускаем
         if user_id == ADMIN_ID:
             return await handler(event, data)
 
@@ -44,22 +44,20 @@ class SubscriptionMiddleware(BaseMiddleware):
                 not_subscribed.append(ch)
 
         if not_subscribed:
-            text = "🔒 **Для использования бота необходимо подписаться на следующие каналы:**\n\n"
+            text = "🔒 **Для использования бота подпишитесь:**\n\n"
             keyboard_buttons = []
             for ch in not_subscribed:
                 if ch["link"]:
                     text += f"• [{ch['username'] or ch['id']}]({ch['link']})\n"
-                    keyboard_buttons.append([InlineKeyboardButton(text=f"📢 Подписаться", url=ch["link"])])
+                    keyboard_buttons.append([InlineKeyboardButton(text="📢 Подписаться", url=ch["link"])])
                 else:
                     text += f"• {ch['username'] or ch['id']}\n"
-            keyboard_buttons.append([InlineKeyboardButton(text="✅ Проверить подписку", callback_data="check_subscription")])
+            keyboard_buttons.append([InlineKeyboardButton(text="✅ Проверить", callback_data="check_subscription")])
             keyboard = InlineKeyboardMarkup(inline_keyboard=keyboard_buttons)
-
             if isinstance(event, Message):
                 await event.answer(text, reply_markup=keyboard, parse_mode="Markdown", disable_web_page_preview=True)
             else:
                 await event.message.answer(text, reply_markup=keyboard, parse_mode="Markdown", disable_web_page_preview=True)
                 await event.answer()
             return
-
         return await handler(event, data)
