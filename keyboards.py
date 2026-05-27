@@ -5,7 +5,7 @@ def main_menu(user_id: int):
     buttons = [
         [
             InlineKeyboardButton(text="🤖 Groq (LLaMA 3)", callback_data="ai_groq"),
-            InlineKeyboardButton(text="🧠 DeepSeek", callback_data="ai_deepseek")
+            InlineKeyboardButton(text="🧠 OpenAI (GPT-3.5)", callback_data="ai_openai")
         ],
         [
             InlineKeyboardButton(text="🎨 Генерация изображения", callback_data="generate_image_menu")
@@ -16,7 +16,7 @@ def main_menu(user_id: int):
             InlineKeyboardButton(text="⚙️ Настройки", callback_data="settings")
         ],
         [
-            InlineKeyboardButton(text="⭐ Поддержать", callback_data="donate")
+            InlineKeyboardButton(text="⭐ Поддержать / Купить", callback_data="donate")
         ],
         [
             InlineKeyboardButton(text="🎮 Открыть Mini App", web_app=WebAppInfo(url="https://asdasdasdasdv-production.up.railway.app"))
@@ -35,16 +35,17 @@ def admin_panel():
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="📊 Статистика", callback_data="admin_stats")],
         [InlineKeyboardButton(text="📢 Рассылка", callback_data="admin_broadcast")],
-        [InlineKeyboardButton(text="👥 Пользователи", callback_data="admin_users")],
+        [InlineKeyboardButton(text="👥 Список пользователей", callback_data="admin_users")],
         [InlineKeyboardButton(text="💰 Накрутка баланса", callback_data="admin_balance")],
         [InlineKeyboardButton(text="⭐ Управление подпиской", callback_data="admin_subscription")],
+        [InlineKeyboardButton(text="📢 Управление каналами", callback_data="admin_channels")],
         [InlineKeyboardButton(text="◀️ Выход", callback_data="main_menu")]
     ])
 
 def admin_user_list_menu(users: list, page: int, total_pages: int):
     buttons = []
-    for u in users[:5]:
-        text = f"{u['user_id']} | {u.get('username', 'no name')} | {u['balance_requests']} запр."
+    for u in users:
+        text = f"{u['user_id']} | {u.get('username') or 'no name'} | {u['balance_requests']} запр."
         buttons.append([InlineKeyboardButton(text=text, callback_data=f"admin_user_{u['user_id']}")])
     nav_buttons = []
     if page > 0:
@@ -53,8 +54,19 @@ def admin_user_list_menu(users: list, page: int, total_pages: int):
         nav_buttons.append(InlineKeyboardButton("Вперед ▶️", callback_data=f"admin_users_page_{page+1}"))
     if nav_buttons:
         buttons.append(nav_buttons)
-    buttons.append([InlineKeyboardButton("◀️ В админ-панель", callback_data="admin_panel")])
+    buttons.append([InlineKeyboardButton(text="◀️ В админ-панель", callback_data="admin_panel")])
     return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+def admin_user_profile_buttons(user_id: int):
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="💰 Начислить баланс", callback_data=f"admin_add_balance_{user_id}")],
+        [InlineKeyboardButton(text="⭐ Выдать подписку (30 дней)", callback_data=f"admin_give_sub_{user_id}")],
+        [InlineKeyboardButton(text="✏️ Отправить сообщение", callback_data=f"admin_msg_{user_id}")],
+        [InlineKeyboardButton(text="🗑 Очистить историю чата", callback_data=f"admin_clear_history_{user_id}")],
+        [InlineKeyboardButton(text="📜 История запросов", callback_data=f"admin_user_history_{user_id}")],
+        [InlineKeyboardButton(text="◀️ Назад к списку", callback_data="admin_users")],
+        [InlineKeyboardButton(text="◀️ В админ-панель", callback_data="admin_panel")]
+    ])
 
 def settings_menu(current_ai: str):
     return InlineKeyboardMarkup(inline_keyboard=[
@@ -67,7 +79,7 @@ def settings_menu(current_ai: str):
 def ai_choice_menu():
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="Groq", callback_data="set_ai_groq"),
-         InlineKeyboardButton(text="DeepSeek", callback_data="set_ai_deepseek")],
+         InlineKeyboardButton(text="OpenAI", callback_data="set_ai_openai")],
         [InlineKeyboardButton(text="◀️ Назад", callback_data="settings")]
     ])
 
