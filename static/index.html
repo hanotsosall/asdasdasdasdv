@@ -128,7 +128,7 @@
             flex-direction: column;
             gap: 12px;
             margin-bottom: 20px;
-            max-height: calc(100vh - 240px);
+            max-height: calc(100vh - 220px);
             overflow-y: auto;
             padding-right: 6px;
         }
@@ -176,10 +176,10 @@
             0%,60%,100% { transform: translateY(0); opacity:0.4; }
             30% { transform: translateY(-8px); opacity:1; }
         }
-        /* Поле ввода чата — приподнято выше навигации */
+        /* Поле ввода чата — поднято выше, чтобы не перекрывалось навигацией */
         .input-wrapper {
             position: fixed;
-            bottom: 120px;   /* увеличено, чтобы не перекрывалось навигацией */
+            bottom: 130px;
             left: 20px;
             right: 20px;
             display: flex;
@@ -210,7 +210,7 @@
             cursor: pointer;
             transition: 0.2s;
         }
-        /* Контейнер для генерации изображений: кнопка ровно справа, не уезжает */
+        /* Контейнер для генерации изображений */
         .image-input-container {
             display: flex;
             gap: 12px;
@@ -230,7 +230,7 @@
             color: white;
             font-size: 16px;
             outline: none;
-            min-width: 0; /* предотвращает переполнение */
+            min-width: 0;
         }
         .image-input-container button {
             background: var(--tg-theme-button-color, #3a6ea5);
@@ -241,7 +241,6 @@
             color: white;
             cursor: pointer;
             white-space: nowrap;
-            transition: 0.2s;
             flex-shrink: 0;
         }
         .image-result-card {
@@ -298,7 +297,6 @@
             max-width: 90%;
             max-height: 90%;
             border-radius: 16px;
-            box-shadow: 0 0 40px rgba(0,0,0,0.5);
         }
         .glow-button {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -329,7 +327,7 @@
 <div id="chat-page" class="page active">
     <div class="model-selector" id="chat-model-selector">
         <div class="model-btn" data-model="groq">🤖 Groq</div>
-        <div class="model-btn" data-model="deepseek">🧠 DeepSeek</div>
+        <div class="model-btn" data-model="gemini">✨ Gemini</div>
     </div>
     <div class="chat-messages" id="chat-history"></div>
     <div class="input-wrapper">
@@ -372,14 +370,14 @@
         <div class="stat-row">Основная ИИ: <strong id="current-default-ai">groq</strong></div>
         <div class="model-selector" id="default-ai-selector">
             <div class="model-btn" data-default="groq">Groq</div>
-            <div class="model-btn" data-default="deepseek">DeepSeek</div>
+            <div class="model-btn" data-default="gemini">Gemini</div>
         </div>
         <button class="glow-button" id="clear-history-btn" style="background:#aa2e4e; margin-top:20px;">🗑 Очистить историю чата</button>
         <button class="glow-button" id="close-app-btn" style="background:#2c3e66; margin-top:12px;">Закрыть приложение</button>
     </div>
 </div>
 
-<!-- Модальное окно для увеличенного просмотра -->
+<!-- Модальное окно для увеличенного просмотра изображения -->
 <div id="image-modal" class="modal" onclick="closeModal()">
     <img id="modal-image" src="" alt="Full size">
 </div>
@@ -393,7 +391,7 @@
     let currentChatModel = "groq";
     let chatHistory = [];
 
-    // Частицы
+    // Создание частиц
     function createParticles() {
         const container = document.getElementById('particles');
         for(let i=0;i<80;i++) {
@@ -498,6 +496,7 @@
     });
     document.getElementById('message-input').addEventListener('keypress', e => { if(e.key==='Enter') document.getElementById('send-btn').click(); });
 
+    // Выбор модели чата
     document.querySelectorAll('#chat-model-selector .model-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             document.querySelectorAll('#chat-model-selector .model-btn').forEach(b=>b.classList.remove('active-model'));
@@ -507,7 +506,7 @@
     });
     document.querySelector('#chat-model-selector .model-btn').classList.add('active-model');
 
-    // --- Генерация изображений с работающим скачиванием ---
+    // --- Генерация изображений ---
     let currentImageModel = 'pollinations';
     document.querySelectorAll('#image-model-selector .model-btn').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -537,16 +536,11 @@
         modal.style.display = 'flex';
         modalImg.src = url;
     };
-
     window.closeModal = () => {
         document.getElementById('image-modal').style.display = 'none';
     };
-
-    // Исправленная функция скачивания: открывает ссылку в браузере Telegram
     window.downloadImage = (url) => {
-        // Используем встроенный метод Telegram WebApp для открытия ссылок
         tg.openLink(url);
-        // Также можно показать подсказку
         tg.showAlert('Изображение открыто в браузере. Нажмите и удерживайте для сохранения.');
     };
 
