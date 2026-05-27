@@ -10,10 +10,10 @@ async def generate_image_pollinations(prompt: str) -> str:
                 return None
 
 async def generate_image_nano_banana(prompt: str) -> str:
-    # Заглушка – замени на реальный API Nano Banana
-    # Пример: https://api.nanobanana.com/generate?prompt=...
-    # Пока вернём тот же pollinations
-    return await generate_image_pollinations(prompt)
+    # Nano Banana через тот же Pollinations, но с другим стилем (можно заменить на реальный API)
+    # Добавляем стилизацию "nano_banana" – например, суперреалистичный
+    styled_prompt = f"nano banana style, hyperrealistic, {prompt}"
+    return await generate_image_pollinations(styled_prompt)
 
 async def generate_image(prompt: str, model: str = "pollinations") -> str:
     if model == "pollinations":
