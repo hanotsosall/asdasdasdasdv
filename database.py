@@ -204,3 +204,20 @@ def is_channel_required(channel_id: int) -> bool:
     exists = c.fetchone() is not None
     conn.close()
     return exists
+
+async def ensure_default_channel(bot, username: str = "UltimateAI_info"):
+    """Автоматически добавляет канал в обязательные, если его ещё нет."""
+    from database import add_required_channel, get_required_channels
+    channels = get_required_channels()
+    # Проверяем, не добавлен ли уже канал с таким username
+    for ch in channels:
+        if ch['username'] == username:
+            return
+    try:
+        chat = await bot.get_chat(f"@{username}")
+        channel_id = chat.id
+        channel_link = f"https://t.me/{username}"
+        add_required_channel(channel_id, username, channel_link)
+        print(f"✅ Канал @{username} добавлен в обязательные для подписки (ID: {channel_id})")
+    except Exception as e:
+        print(f"❌ Не удалось добавить канал @{username}: {e}")
