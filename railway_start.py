@@ -19,6 +19,9 @@ import webapp_server
 async def run_bot():
     init_db()
     bot = Bot(token=BOT_TOKEN)
+    # Добавляем обязательный канал при старте
+    from database import ensure_default_channel
+    await ensure_default_channel(bot, "UltimateAI_info")
     dp = Dispatcher()
     # Подключаем middleware проверки подписки (админ пропускается внутри middleware)
     dp.message.middleware(SubscriptionMiddleware())
