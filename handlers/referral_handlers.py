@@ -12,11 +12,11 @@ async def referral_menu(callback: CallbackQuery):
     link = f"https://t.me/{bot_username}?start=ref_{user_id}"
     user = get_user(user_id)
     text = (
-        "👥 **Реферальная система**\n\n"
-        f"🔗 Твоя ссылка:\n`{link}`\n\n"
-        f"👥 Приглашено друзей: {user['ref_count']}\n"
-        "🎁 За каждого друга ты получаешь **+5 запросов**.\n"
+        "👥 <b>Реферальная система</b>\n\n"
+        f"🔗 Твоя ссылка:\n<code>{link}</code>\n\n"
+        f"👥 Приглашено друзей: <b>{user['ref_count']}</b>\n"
+        "🎁 За каждого друга ты получаешь <b>+5 запросов</b>.\n"
         "📤 Отправляй ссылку друзьям!"
     )
-    await callback.message.edit_text(text, reply_markup=back_button(), parse_mode="Markdown")
+    await callback.message.edit_text(text, reply_markup=back_button(), parse_mode="HTML")
     await callback.answer()
