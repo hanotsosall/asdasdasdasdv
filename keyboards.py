@@ -71,7 +71,6 @@ def settings_menu(current_ai: str):
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text=f"🤖 Основная ИИ: {current_ai.upper()}", callback_data="change_default_ai")],
         [InlineKeyboardButton(text="🗑 Очистить историю диалога", callback_data="clear_history")],
-        [InlineKeyboardButton(text="🖼 Выбор модели генерации", callback_data="image_model_settings")],
         [InlineKeyboardButton(text="◀️ Назад", callback_data="main_menu")]
     ])
 
@@ -82,16 +81,8 @@ def ai_choice_menu():
         [InlineKeyboardButton(text="◀️ Назад", callback_data="settings")]
     ])
 
-def image_model_menu(current_model: str = "pollinations"):
-    return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text=f"🌐 Pollinations {'✅' if current_model=='pollinations' else ''}", callback_data="set_image_model_pollinations")],
-        [InlineKeyboardButton(text="◀️ Назад", callback_data="settings")]
-    ])
-
 def image_generation_menu():
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="🎨 Сгенерировать изображение", callback_data="generate_image")],
-        [InlineKeyboardButton(text="◀️ Назад", callback_data="main_menu")]
-    ])        [InlineKeyboardButton(text="🎨 Сгенерировать изображение", callback_data="generate_image")],
         [InlineKeyboardButton(text="◀️ Назад", callback_data="main_menu")]
     ])
