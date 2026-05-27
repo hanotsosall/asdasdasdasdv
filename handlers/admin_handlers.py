@@ -3,15 +3,19 @@ from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import CallbackQuery, Message, InlineKeyboardMarkup, InlineKeyboardButton
-from config import ADMIN_ID
-from database import (get_user, update_user, get_all_users, count_users,
-                      clear_history, get_history, add_required_channel,
-                      remove_required_channel, get_required_channels)
+from datetime import datetime, timedelta
 import sqlite3
+
+from config import ADMIN_ID
+from database import (
+    get_user, update_user, get_all_users, count_users,
+    clear_history, get_history, add_history
+)
 from keyboards import admin_panel, back_button, admin_user_list_menu, admin_user_profile_buttons
 
 router = Router()
 
+# Состояния для FSM
 class AdminStates(StatesGroup):
     waiting_broadcast = State()
     waiting_balance_amount = State()
@@ -19,10 +23,8 @@ class AdminStates(StatesGroup):
     waiting_sub_days = State()
     waiting_msg_user_id = State()
     waiting_msg_text = State()
-    waiting_channel_id = State()
-    waiting_channel_username = State()
-    waiting_channel_link = State()
 
+# Проверка админа
 def is_admin(user_id: int) -> bool:
     return user_id == ADMIN_ID
 
@@ -66,12 +68,13 @@ async def admin_stats(callback: CallbackQuery):
     await callback.message.edit_text(text, reply_markup=back_button("admin_panel"), parse_mode="Markdown")
     await callback.answer()
 
-# ---------- Список пользователей ----------
+# ---------- Список пользователей (пагинация) ----------
 @router.callback_query(lambda c: c.data.startswith("admin_users"))
 async def admin_users(callback: CallbackQuery):
     if not is_admin(callback.from_user.id):
         await callback.answer("Нет доступа", show_alert=True)
         return
+    # Определяем номер страницы
     if "page_" in callback.data:
         page = int(callback.data.split("_")[-1])
     else:
@@ -83,12 +86,12 @@ async def admin_users(callback: CallbackQuery):
     total_pages = (total + limit - 1) // limit
     text = f"👥 **Пользователи** (стр. {page+1}/{total_pages}):\n"
     for u in users:
-        text += f"🆔 {u['user_id']} | {u.get('username') or 'no name'} | Баланс: {u['balance_requests']} | Подписка: {'✅' if u['subscribed'] else '❌'}\n"
+        text += f"🆔 {u['user_id']} | @{u.get('username') or 'no name'} | Баланс: {u['balance_requests']} | Подписка: {'✅' if u['subscribed'] else '❌'}\n"
     await callback.message.edit_text(text, reply_markup=admin_user_list_menu(users, page, total_pages), parse_mode="Markdown")
     await callback.answer()
 
-# ---------- Профиль пользователя ----------
-@router.callback_query(lambda c: c.data.startswith("admin_user_"))
+# ---------- Просмотр профиля пользователя (по клику на пользователя) ----------
+@router.callback_query(lambda c: c.data.startswith("admin_user_") and not c.data.startswith("admin_user_history_") and not c.data.startswith("admin_user_clear_"))
 async def admin_user_profile(callback: CallbackQuery):
     if not is_admin(callback.from_user.id):
         await callback.answer("Нет доступа", show_alert=True)
@@ -109,7 +112,7 @@ async def admin_user_profile(callback: CallbackQuery):
     await callback.message.edit_text(text, reply_markup=admin_user_profile_buttons(target_id), parse_mode="Markdown")
     await callback.answer()
 
-# ---------- Накрутка баланса ----------
+# ---------- Накрутка баланса (кнопка в профиле) ----------
 @router.callback_query(lambda c: c.data.startswith("admin_add_balance_"))
 async def admin_add_balance_prompt(callback: CallbackQuery, state: FSMContext):
     if not is_admin(callback.from_user.id):
@@ -117,7 +120,7 @@ async def admin_add_balance_prompt(callback: CallbackQuery, state: FSMContext):
         return
     target_id = int(callback.data.split("_")[-1])
     await state.update_data(target_user=target_id)
-    await callback.message.answer("💰 Введите количество запросов (можно отрицательное):")
+    await callback.message.answer("💰 Введите количество запросов для начисления (можно отрицательное):")
     await state.set_state(AdminStates.waiting_balance_amount)
     await callback.answer()
 
@@ -139,30 +142,39 @@ async def admin_add_balance_execute(message: Message, state: FSMContext):
         await message.answer(f"✅ Баланс пользователя {target_id} изменён на {amount}. Теперь: {new_balance} запросов.")
         # Показываем профиль снова
         user = get_user(target_id)
-        text = f"👤 **Профиль пользователя** ... (обновлено)"
+        text = (
+            f"👤 **Профиль пользователя**\n"
+            f"🆔 ID: `{user['user_id']}`\n"
+            f"💰 Баланс: {user['balance_requests']} запросов\n"
+            f"⭐ Подписка: {'✅ Активна' if user['subscribed'] else '❌ Нет'}"
+        )
         await message.answer(text, reply_markup=admin_user_profile_buttons(target_id), parse_mode="Markdown")
-    except:
-        await message.answer("❌ Ошибка. Введите целое число.")
+    except Exception as e:
+        await message.answer(f"❌ Ошибка: {e}. Введите целое число.")
     finally:
         await state.clear()
 
-# ---------- Выдать подписку ----------
+# ---------- Выдача подписки (кнопка в профиле) ----------
 @router.callback_query(lambda c: c.data.startswith("admin_give_sub_"))
 async def admin_give_sub(callback: CallbackQuery):
     if not is_admin(callback.from_user.id):
         await callback.answer("Нет доступа", show_alert=True)
         return
     target_id = int(callback.data.split("_")[-1])
-    from datetime import datetime, timedelta
     until = (datetime.now() + timedelta(days=30)).strftime("%Y-%m-%d %H:%M:%S")
     update_user(target_id, subscribed=1, subscription_until=until)
-    await callback.answer(f"✅ Подписка на 30 дней выдана пользователю {target_id}")
+    await callback.answer(f"✅ Подписка на 30 дней выдана пользователю {target_id}", show_alert=True)
     # Обновляем профиль
     user = get_user(target_id)
-    text = f"👤 **Профиль пользователя** ... (подписка активна)"
+    text = (
+        f"👤 **Профиль пользователя**\n"
+        f"🆔 ID: `{user['user_id']}`\n"
+        f"💰 Баланс: {user['balance_requests']}\n"
+        f"⭐ Подписка: ✅ Активна до {until}"
+    )
     await callback.message.edit_text(text, reply_markup=admin_user_profile_buttons(target_id), parse_mode="Markdown")
 
-# ---------- Отправить сообщение ----------
+# ---------- Отправить сообщение пользователю ----------
 @router.callback_query(lambda c: c.data.startswith("admin_msg_"))
 async def admin_msg_prompt(callback: CallbackQuery, state: FSMContext):
     if not is_admin(callback.from_user.id):
@@ -186,8 +198,8 @@ async def admin_send_message(message: Message, state: FSMContext):
     try:
         await message.bot.send_message(target_id, f"📩 Сообщение от администратора:\n{text}")
         await message.answer(f"✅ Сообщение отправлено пользователю {target_id}")
-    except:
-        await message.answer(f"❌ Не удалось отправить (бот заблокирован или нет чата).")
+    except Exception as e:
+        await message.answer(f"❌ Не удалось отправить: {e}")
     await state.clear()
 
 # ---------- Очистить историю чата пользователя ----------
@@ -198,25 +210,26 @@ async def admin_clear_history_user(callback: CallbackQuery):
         return
     target_id = int(callback.data.split("_")[-1])
     clear_history(target_id)
-    await callback.answer(f"🗑 История пользователя {target_id} очищена")
+    await callback.answer(f"🗑 История пользователя {target_id} очищена", show_alert=True)
+    # Обновляем профиль
     user = get_user(target_id)
-    text = f"👤 **Профиль пользователя** ... (история очищена)"
+    text = f"👤 **Профиль пользователя**\n🆔 ID: `{user['user_id']}`\nИстория чата очищена."
     await callback.message.edit_text(text, reply_markup=admin_user_profile_buttons(target_id), parse_mode="Markdown")
 
-# ---------- История запросов ----------
+# ---------- История запросов пользователя ----------
 @router.callback_query(lambda c: c.data.startswith("admin_user_history_"))
 async def admin_user_history(callback: CallbackQuery):
     if not is_admin(callback.from_user.id):
         await callback.answer("Нет доступа", show_alert=True)
         return
     target_id = int(callback.data.split("_")[-1])
-    history = get_history(target_id, "groq", 20)
+    history = get_history(target_id, "groq", 20)  # последние 20 сообщений (можно взять любую модель)
     if not history:
         await callback.answer("История пуста", show_alert=True)
         return
     text = f"📜 **Последние диалоги пользователя {target_id} (Groq):**\n\n"
     for role, content in history[-10:]:
-        text += f"{role}: {content[:100]}...\n"
+        text += f"👤 {role}: {content[:150]}...\n"
     await callback.message.answer(text, parse_mode="Markdown")
     await callback.answer()
 
@@ -226,7 +239,7 @@ async def admin_broadcast_start(callback: CallbackQuery, state: FSMContext):
     if not is_admin(callback.from_user.id):
         await callback.answer("Нет доступа", show_alert=True)
         return
-    await callback.message.edit_text("📢 **Рассылка**\nОтправь сообщение для всех пользователей.", reply_markup=back_button("admin_panel"))
+    await callback.message.edit_text("📢 **Рассылка**\nОтправь сообщение (текст, фото, видео) для всех пользователей.\nНажми «Назад» для отмены.", reply_markup=back_button("admin_panel"))
     await state.set_state(AdminStates.waiting_broadcast)
     await callback.answer()
 
@@ -250,28 +263,4 @@ async def admin_broadcast_send(message: Message, state: FSMContext):
             pass
     await message.answer(f"✅ Рассылка завершена. Отправлено {success} из {len(users)} пользователям.", reply_markup=back_button("admin_panel"))
     await state.clear()
-
-# ---------- Управление каналами (кратко, из предыдущего ответа) ----------
-@router.callback_query(lambda c: c.data == "admin_channels")
-async def admin_channels_menu(callback: CallbackQuery):
-    if not is_admin(callback.from_user.id):
-        await callback.answer("Нет доступа", show_alert=True)
-        return
-    channels = get_required_channels()
-    text = "📢 **Обязательные каналы:**\n\n"
-    if not channels:
-        text += "Список пуст.\n"
-    else:
-        for ch in channels:
-            text += f"🆔 {ch['id']} | @{ch['username']} | [ссылка]({ch['link']})\n"
-    text += "\nВыбери действие:"
-    keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="➕ Добавить канал", callback_data="admin_add_channel")],
-        [InlineKeyboardButton(text="❌ Удалить канал", callback_data="admin_remove_channel")],
-        [InlineKeyboardButton(text="◀️ Назад", callback_data="admin_panel")]
-    ])
-    await callback.message.edit_text(text, reply_markup=keyboard, parse_mode="Markdown", disable_web_page_preview=True)
-    await callback.answer()
-
-# Остальные обработчики для добавления/удаления каналов – они уже были в предыдущем ответе.
-# Вставьте их сюда из моего предыдущего сообщения, чтобы сохранить функционал.
+  
