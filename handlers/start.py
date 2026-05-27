@@ -15,26 +15,25 @@ async def cmd_start(message: types.Message):
             add_referral(ref_id, user_id)
     user = get_user(user_id)
     text = (
-        "🚀 **Ultimate AI Bot**\n\n"
-        "Я объединяю **Groq (LLaMA 3)** и **Gemini (1.5 Flash)** – две мощные нейросети.\n"
+        "🚀 <b>Ultimate AI Bot</b>\n\n"
+        "Я объединяю <b>Groq (LLaMA 3)</b> и <b>Google Gemini (1.5 Flash)</b> – две мощные нейросети.\n"
         "🎨 Генерирую изображения по тексту.\n\n"
-        f"💎 У тебя осталось **{user['balance_requests']}** бесплатных запросов.\n"
+        f"💎 У тебя осталось <b>{user['balance_requests']}</b> бесплатных запросов.\n"
         "➕ Приглашай друзей (+5 запросов за каждого).\n"
         "👇 Выбери действие:"
     )
-    await message.answer(text, reply_markup=main_menu(user_id), parse_mode="Markdown")
+    await message.answer(text, reply_markup=main_menu(user_id), parse_mode="HTML")
 
 @router.callback_query(lambda c: c.data == "main_menu")
 async def back_to_main_menu(callback: types.CallbackQuery):
     user_id = callback.from_user.id
     user = get_user(user_id)
     text = (
-        "🚀 **Ultimate AI Bot**\n\n"
-        "Я объединяю **Groq (LLaMA 3)** и **OpenAI (GPT-3.5)** – две мощные нейросети.\n"
-        "🎨 Генерирую изображения по тексту.\n\n"
-        f"💎 У тебя осталось **{user['balance_requests']}** бесплатных запросов.\n"
-        "➕ Приглашай друзей (+5 запросов за каждого).\n"
+        "🚀 <b>Ultimate AI Bot</b>\n\n"
+        "Я объединяю <b>Groq</b> и <b>Gemini</b>.\n"
+        "🎨 Генерирую изображения.\n\n"
+        f"💎 У тебя осталось <b>{user['balance_requests']}</b> запросов.\n"
         "👇 Выбери действие:"
     )
-    await callback.message.edit_text(text, reply_markup=main_menu(user_id), parse_mode="Markdown")
+    await callback.message.edit_text(text, reply_markup=main_menu(user_id), parse_mode="HTML")
     await callback.answer()
