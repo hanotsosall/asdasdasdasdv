@@ -1,8 +1,5 @@
 import sqlite3
-from datetime import datetime
-import shutil
-import os
-from datetime import datetime
+from datetime import datetime, date
 
 DB_PATH = "bot_database.db"
 
@@ -69,6 +66,14 @@ def init_db():
             channel_id INTEGER UNIQUE,
             channel_username TEXT,
             channel_link TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS daily_stats (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            last_date TEXT UNIQUE,
+            total_added INTEGER DEFAULT 0,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
@@ -208,25 +213,11 @@ def is_channel_required(channel_id: int) -> bool:
     conn.close()
     return exists
 
-async def ensure_default_channel(bot, username: str = "UltimateAI_info"):
-    """Автоматически добавляет канал в обязательные, если его ещё нет."""
-    from database import add_required_channel, get_required_channels
-    channels = get_required_channels()
-    # Проверяем, не добавлен ли уже канал с таким username
-    for ch in channels:
-        if ch['username'] == username:
-            return
-    try:
-        chat = await bot.get_chat(f"@{username}")
-        channel_id = chat.id
-        channel_link = f"https://t.me/{username}"
-        add_required_channel(channel_id, username, channel_link)
-        print(f"✅ Канал @{username} добавлен в обязательные для подписки (ID: {channel_id})")
-    except Exception as e:
-        print(f"❌ Не удалось добавить канал @{username}: {e}")
+# ---------- Резервное копирование (было ранее) ----------
+import shutil
+import os
 
 def backup_database() -> str:
-    """Создаёт копию текущей БД в папку backups/ с датой в имени."""
     if not os.path.exists("backups"):
         os.makedirs("backups")
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -236,7 +227,6 @@ def backup_database() -> str:
     return backup_path
 
 def get_backup_list() -> list:
-    """Возвращает список доступных бэкапов (имя файла, путь)."""
     if not os.path.exists("backups"):
         return []
     backups = []
@@ -245,15 +235,58 @@ def get_backup_list() -> list:
             full_path = os.path.join("backups", f)
             size = os.path.getsize(full_path)
             backups.append({"name": f, "path": full_path, "size": size, "date": f.replace("backup_", "").replace(".db", "")})
-    # сортируем по дате (новые сверху)
     backups.sort(key=lambda x: x["date"], reverse=True)
     return backups
 
 def restore_database(backup_path: str) -> bool:
-    """Восстанавливает БД из указанного бэкапа."""
     try:
         shutil.copy2(backup_path, DB_PATH)
         return True
-    except Exception as e:
-        print(f"Restore error: {e}")
+    except Exception:
         return False
+
+# ---------- Ежедневное начисление 5 запросов ----------
+def add_daily_requests_to_all() -> int:
+    """Начисляет 5 запросов всем пользователям, кроме забаненных.
+    Возвращает количество обновлённых пользователей."""
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    # Получаем всех незабаненных пользователей
+    c.execute("SELECT user_id FROM users WHERE user_id NOT IN (SELECT user_id FROM banned_users)")
+    users = [row[0] for row in c.fetchall()]
+    count = 0
+    for uid in users:
+        try:
+            c.execute("UPDATE users SET balance_requests = balance_requests + 5 WHERE user_id = ?", (uid,))
+            count += 1
+        except:
+            pass
+    conn.commit()
+    conn.close()
+    return count
+
+def get_last_daily_date() -> str:
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("SELECT last_date FROM daily_stats ORDER BY id DESC LIMIT 1")
+    row = c.fetchone()
+    conn.close()
+    return row[0] if row else None
+
+def set_daily_date(date_str: str, total_added: int):
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("INSERT INTO daily_stats (last_date, total_added) VALUES (?, ?)", (date_str, total_added))
+    conn.commit()
+    conn.close()
+
+def daily_job():
+    """Задача, запускаемая планировщиком. Начисляет запросы, если сегодня ещё не начисляли."""
+    today = date.today().isoformat()
+    last = get_last_daily_date()
+    if last == today:
+        print(f"Ежедневное начисление уже выполнено {today}")
+        return
+    added = add_daily_requests_to_all()
+    set_daily_date(today, added)
+    print(f"✅ Ежедневное начисление: {added} пользователей получили +5 запросов")
