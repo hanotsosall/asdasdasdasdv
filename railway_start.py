@@ -14,6 +14,7 @@ from handlers.admin_handlers import router as admin_router
 from handlers.settings_handlers import router as settings_router
 from handlers.message_handler import router as message_router
 from handlers.middlewares import SubscriptionMiddleware
+from scheduler import start_scheduler
 import webapp_server
 
 async def run_bot():
@@ -45,6 +46,9 @@ async def run_api():
     await server.serve()
 
 async def main():
+    # Запускаем планировщик
+    start_scheduler()
+    # Запускаем бота и API параллельно
     await asyncio.gather(run_bot(), run_api())
 
 if __name__ == "__main__":
