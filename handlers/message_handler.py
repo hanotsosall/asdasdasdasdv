@@ -37,3 +37,9 @@ async def handle_default_ai(message: Message, state: FSMContext):
         await message.answer(answer_html, parse_mode="HTML")
     except Exception as e:
         await message.answer(f"⚠️ Ошибка: {e}", parse_mode="HTML")
+
+    elif ai_name == "neurohama":
+        from utils.neurohama_client import ask_neurohama
+        answer = ask_neurohama(message.text, history)
+    if ai_name not in ("groq", "gemini", "neurohama"):
+    ai_name = "groq"
