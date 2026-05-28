@@ -6,7 +6,9 @@ def main_menu(user_id: int):
         [
             InlineKeyboardButton(text="🤖 Groq (LLaMA 3)", callback_data="ai_groq"),
             InlineKeyboardButton(text="✨ Gemini (1.5 Flash)", callback_data="ai_gemini")
-            InlineKeyboardButton(text="🤬 NeuroHam", callback_data="ai_neurohama")
+        ],
+        [
+            InlineKeyboardButton(text="🤬 Хамская нейросеть", callback_data="ai_ham")   # новая кнопка
         ],
         [
             InlineKeyboardButton(text="🎨 Генерация изображения", callback_data="generate_image_menu")
