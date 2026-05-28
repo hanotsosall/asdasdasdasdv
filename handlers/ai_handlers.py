@@ -61,3 +61,8 @@ async def ask_neurohama_menu(callback: CallbackQuery, state: FSMContext):
     await callback.message.edit_text("🤬 Отправь запрос для NeuroHam (хам-режим):", reply_markup=back_button())
     await state.set_state(AIState.waiting_neurohama)
     await callback.answer()
+
+@router.message(AIState.waiting_neurohama)
+async def handle_neurohama(message: Message, state: FSMContext):
+    from utils.neurohama_client import ask_neurohama
+    await process_ai_message(message, state, "neurohama", ask_neurohama)
