@@ -3,7 +3,7 @@ import os
 import uvicorn
 from aiogram import Bot, Dispatcher
 from config import BOT_TOKEN
-from database import init_db
+from database import init_db, ensure_default_channel
 from handlers.start import router as start_router
 from handlers.ai_handlers import router as ai_router
 from handlers.image_handlers import router as image_router
@@ -18,24 +18,22 @@ import webapp_server
 
 async def run_bot():
     init_db()
-    bot = Bot(token=BOT_TOKEN)
-    # Добавляем обязательный канал при старте
-    from database import ensure_default_channel
-    await ensure_default_channel(bot, "UltimateAI_info")
+    # Создаём папку для бэкапов, если её нет
     if not os.path.exists("backups"):
-    os.makedirs("backups")
+        os.makedirs("backups")
+    bot = Bot(token=BOT_TOKEN)
+    # Добавляем канал @UltimateAI_info в обязательные (если ещё не добавлен)
+    await ensure_default_channel(bot, "UltimateAI_info")
     dp = Dispatcher()
-    # Подключаем middleware проверки подписки (админ пропускается внутри middleware)
     dp.message.middleware(SubscriptionMiddleware())
     dp.callback_query.middleware(SubscriptionMiddleware())
-    # Подключаем роутеры
     dp.include_router(start_router)
     dp.include_router(ai_router)
     dp.include_router(image_router)
     dp.include_router(profile_router)
     dp.include_router(referral_router)
     dp.include_router(payment_router)
-    dp.include_router(admin_router)   # обязательно!
+    dp.include_router(admin_router)
     dp.include_router(settings_router)
     dp.include_router(message_router)
     await dp.start_polling(bot)
