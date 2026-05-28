@@ -4,6 +4,7 @@ from aiogram.types import Message
 from database import get_user, update_user, add_history, get_history, is_user_banned
 from utils.groq_client import ask_groq_with_history
 from utils.gemini_client import ask_gemini_with_history
+from utils.ham_client import ask_ham_with_history   # убедитесь, что этот файл существует
 from utils.markdown_helper import markdown_to_html
 
 router = Router()
@@ -21,15 +22,17 @@ async def handle_default_ai(message: Message, state: FSMContext):
         await message.answer("❌ Недостаточно запросов.")
         return
     ai_name = user['default_ai']
-    if ai_name not in ("groq", "gemini"):
+    if ai_name not in ("groq", "gemini", "ham"):
         ai_name = "groq"
     history = get_history(user_id, ai_name, 10)
     await message.bot.send_chat_action(message.chat.id, "typing")
     try:
         if ai_name == "groq":
             answer = ask_groq_with_history(message.text, history)
-        else:
+        elif ai_name == "gemini":
             answer = ask_gemini_with_history(message.text, history)
+        else:  # ham
+            answer = ask_ham_with_history(message.text, history)
         answer_html = markdown_to_html(answer)
         add_history(user_id, ai_name, "user", message.text)
         add_history(user_id, ai_name, "assistant", answer)
@@ -37,9 +40,3 @@ async def handle_default_ai(message: Message, state: FSMContext):
         await message.answer(answer_html, parse_mode="HTML")
     except Exception as e:
         await message.answer(f"⚠️ Ошибка: {e}", parse_mode="HTML")
-
-    elif ai_name == "neurohama":
-        from utils.neurohama_client import ask_neurohama
-        answer = ask_neurohama(message.text, history)
-    if ai_name not in ("groq", "gemini", "neurohama"):
-    ai_name = "groq"
