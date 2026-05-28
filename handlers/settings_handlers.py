@@ -27,7 +27,7 @@ async def change_default_ai_menu(callback: CallbackQuery):
 
 @router.callback_query(lambda c: c.data.startswith("set_ai_"))
 async def set_default_ai(callback: CallbackQuery):
-    ai_name = callback.data.split("_")[-1]
+    ai_name = callback.data.split("_")[-1]  # groq, gemini или neurohama
     user_id = callback.from_user.id
     update_user(user_id, default_ai=ai_name)
     await callback.answer(f"✅ Основная ИИ изменена на {ai_name.upper()}")
