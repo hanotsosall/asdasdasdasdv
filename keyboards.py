@@ -38,6 +38,7 @@ def admin_panel():
         [InlineKeyboardButton(text="👥 Список пользователей", callback_data="admin_users")],
         [InlineKeyboardButton(text="💰 Накрутка баланса", callback_data="admin_balance")],
         [InlineKeyboardButton(text="⭐ Управление подпиской", callback_data="admin_subscription")],
+        [InlineKeyboardButton(text="💾 Бэкап БД", callback_data="admin_backup")],          # новая
         [InlineKeyboardButton(text="◀️ Выход", callback_data="main_menu")]
     ])
 
