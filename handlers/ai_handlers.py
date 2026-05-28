@@ -13,6 +13,7 @@ router = Router()
 class AIState(StatesGroup):
     waiting_groq = State()
     waiting_gemini = State()
+    waiting_neurohama = State()
 
 @router.callback_query(lambda c: c.data == "ai_groq")
 async def ask_groq_menu(callback: CallbackQuery, state: FSMContext):
