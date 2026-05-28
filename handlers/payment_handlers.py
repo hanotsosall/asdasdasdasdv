@@ -43,8 +43,8 @@ async def buy_product(callback: types.CallbackQuery, state: FSMContext):
     await callback.message.answer(
         f"✅ Вы выбрали товар.\n\n"
         f"<b>Реквизиты для оплаты:</b>\n"
-        f"Тинькофф: <code>+7 XXX XXX-XX-XX</code>\n"
-        f"Сбербанк: <code>XXXX XXXX XXXX XXXX</code>\n\n"
+        f"Т-Банк: <code>2200702122827293</code>\n"
+        f"Сбербанк: <code>2202208083924705</code>\n\n"
         f"После перевода нажмите <b>«Я оплатил(а)»</b> и пришлите чек.\n"
         f"Укажите в комментарии ID: <code>{callback.from_user.id}</code>",
         parse_mode="HTML"
