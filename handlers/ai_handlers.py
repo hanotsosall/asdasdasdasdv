@@ -55,3 +55,9 @@ async def handle_groq(message: Message, state: FSMContext):
 @router.message(AIState.waiting_gemini)
 async def handle_gemini(message: Message, state: FSMContext):
     await process_ai_message(message, state, "gemini", ask_gemini_with_history)
+
+@router.callback_query(lambda c: c.data == "ai_neurohama")
+async def ask_neurohama_menu(callback: CallbackQuery, state: FSMContext):
+    await callback.message.edit_text("🤬 Отправь запрос для NeuroHama (хам-режим):", reply_markup=back_button())
+    await state.set_state(AIState.waiting_neurohama)
+    await callback.answer()
