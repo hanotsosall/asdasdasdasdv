@@ -5,6 +5,7 @@ from aiogram.types import CallbackQuery, Message
 from database import get_user, update_user, add_history, get_history
 from utils.groq_client import ask_groq_with_history
 from utils.gemini_client import ask_gemini_with_history
+from utils.ham_client import ask_ham_with_history
 from utils.markdown_helper import markdown_to_html
 from keyboards import back_button
 
@@ -13,7 +14,7 @@ router = Router()
 class AIState(StatesGroup):
     waiting_groq = State()
     waiting_gemini = State()
-    waiting_neurohama = State()
+    waiting_ham = State()   # обязательно
 
 @router.callback_query(lambda c: c.data == "ai_groq")
 async def ask_groq_menu(callback: CallbackQuery, state: FSMContext):
@@ -23,8 +24,17 @@ async def ask_groq_menu(callback: CallbackQuery, state: FSMContext):
 
 @router.callback_query(lambda c: c.data == "ai_gemini")
 async def ask_gemini_menu(callback: CallbackQuery, state: FSMContext):
-    await callback.message.edit_text("✨ Отправь запрос для Google Gemini (1.5 Flash):", reply_markup=back_button())
+    await callback.message.edit_text("✨ Отправь запрос для Google Gemini:", reply_markup=back_button())
     await state.set_state(AIState.waiting_gemini)
+    await callback.answer()
+
+@router.callback_query(lambda c: c.data == "ai_ham")
+async def ask_ham_menu(callback: CallbackQuery, state: FSMContext):
+    await callback.message.edit_text(
+        "🤬 Осторожно! Отправь запрос – я отвечу максимально грубо и с матом.\n(Не принимай близко к сердцу)",
+        reply_markup=back_button()
+    )
+    await state.set_state(AIState.waiting_ham)
     await callback.answer()
 
 async def process_ai_message(message: Message, state: FSMContext, ai_name: str, api_func):
@@ -39,7 +49,7 @@ async def process_ai_message(message: Message, state: FSMContext, ai_name: str, 
     await message.bot.send_chat_action(message.chat.id, "typing")
     try:
         answer = api_func(prompt, history)
-        answer_html = markdown_to_html(answer)   # преобразуем Markdown в HTML
+        answer_html = markdown_to_html(answer)
         add_history(user_id, ai_name, "user", prompt)
         add_history(user_id, ai_name, "assistant", answer)
         update_user(user_id, balance_requests=user['balance_requests']-1, total_requests=user['total_requests']+1)
@@ -56,13 +66,6 @@ async def handle_groq(message: Message, state: FSMContext):
 async def handle_gemini(message: Message, state: FSMContext):
     await process_ai_message(message, state, "gemini", ask_gemini_with_history)
 
-@router.callback_query(lambda c: c.data == "ai_neurohama")
-async def ask_neurohama_menu(callback: CallbackQuery, state: FSMContext):
-    await callback.message.edit_text("🤬 Отправь запрос для NeuroHam (хам-режим):", reply_markup=back_button())
-    await state.set_state(AIState.waiting_neurohama)
-    await callback.answer()
-
-@router.message(AIState.waiting_neurohama)
-async def handle_neurohama(message: Message, state: FSMContext):
-    from utils.neurohama_client import ask_neurohama
-    await process_ai_message(message, state, "neurohama", ask_neurohama)
+@router.message(AIState.waiting_ham)
+async def handle_ham(message: Message, state: FSMContext):
+    await process_ai_message(message, state, "ham", ask_ham_with_history)
