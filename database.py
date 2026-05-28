@@ -1,4 +1,6 @@
 import sqlite3
+import shutil
+import os
 from datetime import datetime, date
 
 DB_PATH = "bot_database.db"
@@ -213,10 +215,7 @@ def is_channel_required(channel_id: int) -> bool:
     conn.close()
     return exists
 
-# ---------- Резервное копирование (было ранее) ----------
-import shutil
-import os
-
+# ---------- Резервное копирование ----------
 def backup_database() -> str:
     if not os.path.exists("backups"):
         os.makedirs("backups")
@@ -247,11 +246,8 @@ def restore_database(backup_path: str) -> bool:
 
 # ---------- Ежедневное начисление 5 запросов ----------
 def add_daily_requests_to_all() -> int:
-    """Начисляет 5 запросов всем пользователям, кроме забаненных.
-    Возвращает количество обновлённых пользователей."""
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    # Получаем всех незабаненных пользователей
     c.execute("SELECT user_id FROM users WHERE user_id NOT IN (SELECT user_id FROM banned_users)")
     users = [row[0] for row in c.fetchall()]
     count = 0
@@ -281,7 +277,6 @@ def set_daily_date(date_str: str, total_added: int):
     conn.close()
 
 def daily_job():
-    """Задача, запускаемая планировщиком. Начисляет запросы, если сегодня ещё не начисляли."""
     today = date.today().isoformat()
     last = get_last_daily_date()
     if last == today:
@@ -290,3 +285,18 @@ def daily_job():
     added = add_daily_requests_to_all()
     set_daily_date(today, added)
     print(f"✅ Ежедневное начисление: {added} пользователей получили +5 запросов")
+
+# ---------- Функция для автоматического добавления канала @UltimateAI_info ----------
+async def ensure_default_channel(bot, username: str = "UltimateAI_info"):
+    channels = get_required_channels()
+    for ch in channels:
+        if ch['username'] == username:
+            return
+    try:
+        chat = await bot.get_chat(f"@{username}")
+        channel_id = chat.id
+        channel_link = f"https://t.me/{username}"
+        add_required_channel(channel_id, username, channel_link)
+        print(f"✅ Канал @{username} добавлен в обязательные для подписки (ID: {channel_id})")
+    except Exception as e:
+        print(f"❌ Не удалось добавить канал @{username}: {e}")
