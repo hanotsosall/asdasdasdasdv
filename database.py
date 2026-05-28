@@ -1,5 +1,8 @@
 import sqlite3
 from datetime import datetime
+import shutil
+import os
+from datetime import datetime
 
 DB_PATH = "bot_database.db"
 
@@ -221,3 +224,36 @@ async def ensure_default_channel(bot, username: str = "UltimateAI_info"):
         print(f"✅ Канал @{username} добавлен в обязательные для подписки (ID: {channel_id})")
     except Exception as e:
         print(f"❌ Не удалось добавить канал @{username}: {e}")
+
+def backup_database() -> str:
+    """Создаёт копию текущей БД в папку backups/ с датой в имени."""
+    if not os.path.exists("backups"):
+        os.makedirs("backups")
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    backup_name = f"backup_{timestamp}.db"
+    backup_path = os.path.join("backups", backup_name)
+    shutil.copy2(DB_PATH, backup_path)
+    return backup_path
+
+def get_backup_list() -> list:
+    """Возвращает список доступных бэкапов (имя файла, путь)."""
+    if not os.path.exists("backups"):
+        return []
+    backups = []
+    for f in os.listdir("backups"):
+        if f.endswith(".db"):
+            full_path = os.path.join("backups", f)
+            size = os.path.getsize(full_path)
+            backups.append({"name": f, "path": full_path, "size": size, "date": f.replace("backup_", "").replace(".db", "")})
+    # сортируем по дате (новые сверху)
+    backups.sort(key=lambda x: x["date"], reverse=True)
+    return backups
+
+def restore_database(backup_path: str) -> bool:
+    """Восстанавливает БД из указанного бэкапа."""
+    try:
+        shutil.copy2(backup_path, DB_PATH)
+        return True
+    except Exception as e:
+        print(f"Restore error: {e}")
+        return False
