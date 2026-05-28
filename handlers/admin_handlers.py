@@ -14,6 +14,7 @@ from database import (
     clear_history, get_history, add_history
 )
 from keyboards import admin_panel, back_button, admin_user_list_menu, admin_user_profile_buttons
+from aiogram.types import FSInputFile
 
 router = Router()
 
@@ -274,12 +275,12 @@ async def admin_backup(callback: CallbackQuery):
         return
     try:
         backup_path = backup_database()
-        # Отправляем файл бэкапа админу
-        with open(backup_path, "rb") as f:
-            await callback.message.answer_document(
-                document=f,
-                caption=f"✅ Бэкап создан: {os.path.basename(backup_path)}"
-            )
+        # Используем FSInputFile (aiogram 3.x)
+        document = FSInputFile(backup_path)
+        await callback.message.answer_document(
+            document=document,
+            caption=f"✅ Бэкап создан: {os.path.basename(backup_path)}"
+        )
     except Exception as e:
         await callback.message.answer(f"❌ Ошибка создания бэкапа: {e}")
     await callback.answer()
