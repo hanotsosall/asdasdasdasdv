@@ -81,6 +81,7 @@ def ai_choice_menu():
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="Groq", callback_data="set_ai_groq"),
          InlineKeyboardButton(text="Gemini", callback_data="set_ai_gemini")],
+        [InlineKeyboardButton(text="NeuroHama", callback_data="set_ai_neurohama")],
         [InlineKeyboardButton(text="◀️ Назад", callback_data="settings")]
     ])
 
