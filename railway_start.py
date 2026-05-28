@@ -22,6 +22,8 @@ async def run_bot():
     # Добавляем обязательный канал при старте
     from database import ensure_default_channel
     await ensure_default_channel(bot, "UltimateAI_info")
+    if not os.path.exists("backups"):
+    os.makedirs("backups")
     dp = Dispatcher()
     # Подключаем middleware проверки подписки (админ пропускается внутри middleware)
     dp.message.middleware(SubscriptionMiddleware())
