@@ -265,4 +265,61 @@ async def admin_broadcast_send(message: Message, state: FSMContext):
             pass
     await message.answer(f"✅ Рассылка завершена. Отправлено {success} из {len(users)} пользователям.", reply_markup=back_button("admin_panel"))
     await state.clear()
+
+# ---------- Бэкап базы данных ----------
+@router.callback_query(lambda c: c.data == "admin_backup")
+async def admin_backup(callback: CallbackQuery):
+    if not is_admin(callback.from_user.id):
+        await callback.answer("Нет доступа", show_alert=True)
+        return
+    try:
+        backup_path = backup_database()
+        # Отправляем файл бэкапа админу
+        with open(backup_path, "rb") as f:
+            await callback.message.answer_document(
+                document=f,
+                caption=f"✅ Бэкап создан: {os.path.basename(backup_path)}"
+            )
+    except Exception as e:
+        await callback.message.answer(f"❌ Ошибка создания бэкапа: {e}")
+    await callback.answer()
+
+# ---------- Команда /restore для восстановления (только админ) ----------
+@router.message(Command("restore"))
+async def admin_restore_list(message: Message):
+    if not is_admin(message.from_user.id):
+        await message.answer("⛔ Нет доступа")
+        return
+    backups = get_backup_list()
+    if not backups:
+        await message.answer("❌ Нет доступных бэкапов.")
+        return
+    text = "📂 **Доступные бэкапы (выберите по дате):**\n\n"
+    keyboard = []
+    for b in backups:
+        text += f"📅 {b['date']} – {b['size']//1024} KB\n"
+        keyboard.append([InlineKeyboardButton(text=f"Восстановить {b['date']}", callback_data=f"restore_{b['name']}")])
+    keyboard.append([InlineKeyboardButton(text="◀️ Отмена", callback_data="admin_panel")])
+    await message.answer(text, reply_markup=InlineKeyboardMarkup(inline_keyboard=keyboard), parse_mode="Markdown")
+
+@router.callback_query(lambda c: c.data.startswith("restore_"))
+async def admin_restore_execute(callback: CallbackQuery):
+    if not is_admin(callback.from_user.id):
+        await callback.answer("Нет доступа", show_alert=True)
+        return
+    backup_name = callback.data.split("_", 1)[1]
+    backup_path = os.path.join("backups", backup_name)
+    if not os.path.exists(backup_path):
+        await callback.message.answer("❌ Файл бэкапа не найден.")
+        return
+    # Создаём дополнительный бэкап перед восстановлением (на всякий случай)
+    safety_backup = backup_database()
+    if restore_database(backup_path):
+        await callback.message.answer(f"✅ База данных восстановлена из бэкапа {backup_name}.\n"
+                                      f"⚠️ Старая БД сохранена как {safety_backup}")
+        # Логируем действие
+        print(f"Админ {callback.from_user.id} восстановил БД из {backup_name}")
+    else:
+        await callback.message.answer("❌ Ошибка восстановления.")
+    await callback.answer()
   
