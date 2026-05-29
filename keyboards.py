@@ -4,11 +4,11 @@ from config import ADMIN_ID
 def main_menu(user_id: int):
     buttons = [
         [
-            InlineKeyboardButton(text="🤖 Groq (LLaMA 3)", callback_data="ai_groq"),
-            InlineKeyboardButton(text="✨ Gemini (1.5 Flash)", callback_data="ai_gemini")
+            InlineKeyboardButton(text="🤖 Groq", callback_data="ai_groq"),
+            InlineKeyboardButton(text="✨ Gemini", callback_data="ai_gemini")
         ],
         [
-            InlineKeyboardButton(text="🤬 Хамская нейросеть", callback_data="ai_ham")   # новая кнопка
+            InlineKeyboardButton(text="🤬 нейрохам", callback_data="ai_ham")   # новая кнопка
         ],
         [
             InlineKeyboardButton(text="🎨 Генерация изображения", callback_data="generate_image_menu")
@@ -83,7 +83,7 @@ def ai_choice_menu():
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="Groq", callback_data="set_ai_groq"),
          InlineKeyboardButton(text="Gemini", callback_data="set_ai_gemini")],
-        [InlineKeyboardButton(text="NeuroHama", callback_data="set_ai_neurohama")],
+        [InlineKeyboardButton(text="NeuroHam", callback_data="set_ai_neurohama")],
         [InlineKeyboardButton(text="◀️ Назад", callback_data="settings")]
     ])
 
